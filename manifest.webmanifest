@@ -1,0 +1,14 @@
+{
+  "name": "True Results Online",
+  "short_name": "TrueResults",
+  "description": "Psychologicznie ugruntowane analizy dla głębszego zrozumienia rzeczywistości informacyjnej.",
+  "lang": "pl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {"src": "/favicon.svg", "sizes": "64x64", "type": "image/svg+xml"}
+  ]
+}

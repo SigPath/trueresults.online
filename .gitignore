@@ -1,0 +1,27 @@
+# Pliki i katalogi ignorowane
+
+# Sekrety
+.env
+.env.*
+!.env.example
+
+# Logi
+logs/last_run.txt
+logs/*.log
+
+# System / edytor
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual env
+.venv/
+venv/

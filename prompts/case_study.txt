@@ -1,0 +1,4 @@
+# Wklej tutaj pełne studium przypadku (SEKCJA 1–4)
+# Ten plik nie powinien zawierać żadnych danych osobowych pozwalających na identyfikację osób.
+# Możesz używać neutralnych opisów zachowań, sekwencji zdarzeń, wzorców reakcji.
+
