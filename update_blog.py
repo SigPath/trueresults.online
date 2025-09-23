@@ -285,11 +285,12 @@ def build_post_html(data: dict, date: dt.date, slug: str) -> str:
         related_html = f"<h2>Warto przeczytać</h2><ul>{''.join(related_items)}</ul>"
 
     return (template_str
-            .replace("{{TITLE}}", data['title'])
-            .replace("{{DESCRIPTION}}", data['description'])
-            .replace("{{CANONICAL_URL}}", f"{BASE_URL}/pages/{slug}.html")
-            .replace("{{DATE}}", date.strftime("%d %B %Y"))
-            .replace("{{HTML_CONTENT}}", data['html_content'])
+            .replace("{{TYTUL}}", data['title'])
+            .replace("{{OPIS}}", data['description'])
+            .replace("{{KANONICAL}}", f"{BASE_URL}/pages/{slug}.html")
+            .replace("{{DATA}}", date.strftime("%Y-%m-%d"))
+            .replace("{{DATA_LUDZKA}}", date.strftime("%d %B %Y"))
+            .replace("{{TRESC_HTML}}", data['html_content'])
             .replace("{{FAQ_HTML}}", faq_html)
             .replace("{{RELATED_POSTS_HTML}}", related_html)
     )
