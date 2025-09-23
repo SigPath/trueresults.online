@@ -251,7 +251,7 @@ Struktura JSON-a:
 
 # === KROK 6: Reszta Skryptu ===
 
-def build_post_html(template_content: str, data: dict, campaign: str) -> str:
+def build_post_html(template_content: str, data: dict, campaign: str, post_url: str) -> str:
     """Wypełnia szablon HTML danymi artykułu."""
     now = datetime.datetime.now()
     
@@ -263,19 +263,29 @@ def build_post_html(template_content: str, data: dict, campaign: str) -> str:
         print("Nie można ustawić polskiej lokalizacji. Data będzie w domyślnym formacie.")
     
     human_date = now.strftime('%d %B %Y')
+    iso_date = now.isoformat()
 
     html = template_content.replace("{{TYTUL}}", data.get('title', 'Brak tytułu'))
+    html = html.replace("{{OPIS}}", data.get('meta_description', 'Brak opisu.'))
+    html = html.replace("{{META_OPIS}}", data.get('meta_description', 'Brak opisu.')) # Podwójne dla pewności
+    html = html.replace("{{KANONICAL}}", post_url)
+    html = html.replace("{{DATA}}", iso_date)
     html = html.replace("{{DATA_LUDZKA}}", human_date)
     html = html.replace("{{KATEGORIA}}", campaign or "Ogólna")
     html = html.replace("{{TRESC_ARTYKULU}}", data.get('html_content', '<p>Brak treści.</p>'))
-    html = html.replace("{{META_OPIS}}", data.get('meta_description', 'Brak opisu.'))
+    html = html.replace("{{TRESC_HTML}}", data.get('html_content', '<p>Brak treści.</p>')) # Podwójne dla pewności
     
     faq_data = data.get("faq_json_ld", {})
     if faq_data:
         faq_script = f'<script type="application/ld+json">{json.dumps(faq_data, indent=2, ensure_ascii=False)}</script>'
     else:
         faq_script = ""
+    
+    # W szablonie nie ma {{FAQ_JSON_LD}}, ale zostawiam na przyszłość.
+    # Zamiast tego, FAQ jest częścią {{FAQ_HTML}} - na razie puste.
     html = html.replace("{{FAQ_JSON_LD}}", faq_script)
+    html = html.replace("{{FAQ_HTML}}", "") # Na razie puste
+    html = html.replace("{{POWIAZANE_POSTY_HTML}}", "") # Na razie puste
     
     return html
 
@@ -436,7 +446,7 @@ def main():
         with open(POST_TEMPLATE_FILE, 'r', encoding='utf-8') as f:
             template_content = f.read()
         
-        post_html = build_post_html(template_content, article_data, campaign)
+        post_html = build_post_html(template_content, article_data, campaign, post_url)
         
         PAGES_DIR.mkdir(parents=True, exist_ok=True)
         with open(filepath, 'w', encoding='utf-8') as f:
