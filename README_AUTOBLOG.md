@@ -208,3 +208,37 @@ Potencjalne rozszerzenia:
 
 ## Licencja
 Możesz adaptować wedle potrzeb.
+
+## Jednoprzyciskowy wrapper uruchomieniowy
+
+Dodano skrypt `run_autoblog.py` oraz prosty wrapper Bash `run_autoblog.sh` aby uprościć lokalne wielokrotne generowanie:
+
+Przykłady:
+```bash
+python3 run_autoblog.py        # 1 wpis
+python3 run_autoblog.py 5      # 5 wpisów (kolejno)
+./run_autoblog.sh 3            # wrapper shell (macOS/Linux)
+```
+
+Zmienne opcjonalne:
+| Zmienna | Opis | Domyślna |
+|---------|------|----------|
+| `DELAY_SECONDS` | Odstęp (sekundy) między wpisami przy count>1 | 2 |
+| `GIT_PUSH` | Ustaw 0 aby nie pushować (tylko lokalny commit) | 1 |
+| `GIT_COMMIT_PREFIX` | Prefiks wiadomości commita | `[auto]` |
+| `MASS_REGENERATE` | Jeśli ustawiona -> wrapper deleguje do trybu masowego w `update_blog.py` | — |
+
+Jeśli chcesz uniknąć limitów API – zwiększ `DELAY_SECONDS`.
+
+Przykład z opóźnieniem i bez push:
+```bash
+export DELAY_SECONDS=5
+export GIT_PUSH=0
+python3 run_autoblog.py 3
+```
+
+Powrót do normalnego działania:
+```bash
+unset GIT_PUSH DELAY_SECONDS
+python3 run_autoblog.py
+```
