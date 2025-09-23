@@ -40,7 +40,7 @@ SPIS_TRESCI_FILE = REPO_PATH / "spis.html"
 load_dotenv(REPO_PATH / ".env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
 # Konfiguracja Gemini
 genai.configure(api_key=GEMINI_API_KEY)
