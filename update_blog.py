@@ -2297,6 +2297,13 @@ def main():
     topic = "?"
     error: Optional[str] = None
     try:
+        # === KROK 2: AKTUALIZACJA GŁÓWNEGO WYWOŁANIA ===
+        # TODO (dokumentacyjne): Oryginalnie w tym miejscu było wywołanie fetch_ai_article(topic).
+        # Przepływ po refaktoryzacji (wersja 3.0):
+        # 1. topic = pick_topic(...)
+        # 2. master_prompt = (ładowany wewnętrznie w generate_full_article_from_master_prompt)
+        # 3. data = generate_full_article_from_master_prompt(topic)
+        # Funkcja create_post() realizuje już powyższy schemat – komentarz pozostawiony jako instrukcja historii zmian.
         slug, data, topic, campaign_name = create_post()
         # Hub kampanii wyłączony – brak generowania
         # Aktualizacja index JSON-LD (ostatnie wpisy)
