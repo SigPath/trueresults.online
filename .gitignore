@@ -25,3 +25,7 @@ __pycache__/
 # Virtual env
 .venv/
 venv/
+
+# Foldery z zawartością nieprzeznaczoną do GitHub
+docs/
+pages/
