@@ -1,14 +1,15 @@
-# === PROMPT DLA GITHUB COPILOT - WERSJA 6.1 (Autonomiczny Analityk AI) ===
+# === PROMPT DLA GITHUB COPILOT - WERSJA 7.0 (Integracja z Matrycą Excel) ===
 #
-# Cel: Stworzenie ostatecznej, kreatywnej wersji skryptu `update_blog.py`.
-# System ma wczytywać konfigurację z pliku `config.xlsx`, a następnie, na podstawie
-# krótkiej "inspiracji" z arkusza KampanieTematyczne, zlecać AI samodzielne
-# wymyślenie tytułu i napisanie unikalnego, głębokiego artykułu.
+# **TWOJA ROLA:** Jesteś starszym inżynierem oprogramowania. Twoim zadaniem jest
+# refaktoryzacja istniejącego skryptu `update_blog.py`, aby w pełni wykorzystywał
+# rozbudowaną, czterokolumnową strukturę danych z pliku `config.xlsx`.
 #
-# INSTRUKCJA DLA COPILOTA:
-# Wygeneruj kompletny, czysty skrypt w Pythonie, który realizuje poniższą logikę.
+# **KONCEPCJA ARCHITEKTONICZNA:**
+# Skrypt musi teraz działać jak precyzyjny wykonawca poleceń z Excela.
+# Zamiast losować ogólną "inspirację", będzie losował cały "pakiet zadaniowy"
+# (Tytuł, Teza, Słowa Kluczowe) i przekazywał go do AI.
 
-# === KROK 1: Importy i Konfiguracja ===
+# === KROK 1: Importy i Konfiguracja Podstawowa ===
 import os
 import time
 import datetime
@@ -27,7 +28,7 @@ from dotenv import load_dotenv
 # Konfiguracja ścieżek
 REPO_PATH = Path(__file__).parent.resolve()
 CONFIG_FILE = REPO_PATH / "config.xlsx"
-USED_TOPICS_FILE = REPO_PATH / "used_topics_global.txt"
+HISTORY_FILE = REPO_PATH / "used_topics_global.txt"
 TEMPLATES_PATH = REPO_PATH
 POST_TEMPLATE_FILE = TEMPLATES_PATH / "szablon_wpisu.html"
 INDEX_FILE = REPO_PATH / "index.html"
@@ -58,175 +59,209 @@ safety_settings = [
     {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
 ]
 
-# === KROK 2: Wczytywanie Konfiguracji z Pliku Excel (Wersja Odporna na Błędy) ===
+# === KROK 2: Ulepszona Funkcja Wczytywania Konfiguracji z Excela ===
 def load_config_from_excel(path: Path) -> dict:
     """
-    Wczytuje konfigurację z pliku Excel, ignorując nagłówki i bazując na pozycji kolumn.
-    Kolumna A -> 'key', Kolumna B -> 'value'.
+    Wczytuje konfigurację z pliku Excel, w tym pełną matrycę tematyczną.
+    NOWOŚĆ WERSJI 7.0: Arkusz KampanieTematyczne wczytywany jako lista słowników
+    z czterema kolumnami: campaign, title, thesis, keywords.
     """
     if not path.exists():
         raise FileNotFoundError(f"Plik konfiguracyjny nie został znaleziony: {path}")
 
-    print(f"Wczytywanie konfiguracji z pliku: {path}...")
+    print(f"🔧 [v7.0] Wczytywanie konfiguracji z pliku: {path}...")
     config = {
         "master_prompt_parts": {},
         "case_study": {},
-        "campaigns": {}
+        "campaign_topics": []  # NOWOŚĆ: Lista słowników z pełnymi pakietami zadaniowymi
     }
 
     try:
-        # Wczytywanie MasterPrompt
+        # Wczytywanie MasterPrompt (bez zmian)
         df_prompt = pd.read_excel(path, sheet_name='MasterPrompt', header=None)
         df_prompt.columns = ['key', 'value']
         config['master_prompt_parts'] = dict(zip(df_prompt['key'], df_prompt['value']))
 
-        # Wczytywanie CaseStudy
+        # Wczytywanie CaseStudy (bez zmian)
         df_case = pd.read_excel(path, sheet_name='CaseStudy', header=None)
         df_case.columns = ['key', 'value']
         config['case_study'] = dict(zip(df_case['key'], df_case['value']))
 
-        # Wczytywanie Kampanii Tematycznych
-        df_campaigns = pd.read_excel(path, sheet_name='KampanieTematyczne', header=None)
-        df_campaigns.columns = ['campaign', 'inspiration']
+        # KLUCZOWA ZMIANA: Wczytywanie pełnej matrycy tematycznej
+        df_topics = pd.read_excel(path, sheet_name='KampanieTematyczne', header=None)
+        df_topics.columns = ['campaign', 'title', 'thesis', 'keywords']
         
-        campaign_dict = {}
-        for _, row in df_campaigns.iterrows():
-            campaign_name = row['campaign']
-            inspiration = row['inspiration']
-            if pd.notna(campaign_name) and pd.notna(inspiration):
-                if campaign_name not in campaign_dict:
-                    campaign_dict[campaign_name] = []
-                campaign_dict[campaign_name].append(inspiration)
-        config['campaigns'] = campaign_dict
+        # Przekształcenie do listy słowników - każdy wiersz to kompletny "pakiet zadaniowy"
+        campaign_topics = []
+        for _, row in df_topics.iterrows():
+            if pd.notna(row['campaign']) and pd.notna(row['title']):
+                topic_package = {
+                    'campaign': str(row['campaign']).strip(),
+                    'title': str(row['title']).strip(),
+                    'thesis': str(row['thesis']).strip() if pd.notna(row['thesis']) else '',
+                    'keywords': str(row['keywords']).strip() if pd.notna(row['keywords']) else ''
+                }
+                campaign_topics.append(topic_package)
         
-        print("Konfiguracja wczytana pomyślnie.")
+        config['campaign_topics'] = campaign_topics
+        
+        print(f"✅ [v7.0] Wczytano {len(campaign_topics)} kompletnych pakietów zadaniowych.")
         return config
 
     except Exception as e:
-        print(f"[BŁĄD KRYTYCZNY] Nie udało się wczytać danych z pliku Excel: {e}")
-        print("Upewnij się, że plik 'config.xlsx' istnieje i zawiera arkusze: 'MasterPrompt', 'CaseStudy', 'KampanieTematyczne'.")
+        print(f"❌ [BŁĄD KRYTYCZNY] Nie udało się wczytać danych z pliku Excel: {e}")
+        print("Upewnij się, że plik 'config.xlsx' zawiera arkusze: 'MasterPrompt', 'CaseStudy', 'KampanieTematyczne'.")
         raise
 
 # === KROK 3: Dynamiczne Budowanie Master Promptu ===
-def build_master_prompt(config: dict) -> str:
-    """Dynamicznie buduje pełny tekst Master Promptu."""
-    prompt_parts = [str(value) for value in config.get("master_prompt_parts", {}).values()]
-    case_study_parts = [f"{key}: {value}" for key, value in config.get("case_study", {}).items()]
-    
-    case_study_full = "\n".join(case_study_parts)
-    
-    # Wstrzyknięcie Case Study do promptu
-    full_prompt = "\n\n".join(prompt_parts)
-    full_prompt = full_prompt.replace("{{CASE_STUDY}}", case_study_full)
-    
-    return full_prompt
+def build_master_prompt_from_config(config_file_path: Path) -> str:
+    """
+    WERSJA 7.0: Buduje master prompt bezpośrednio z arkuszy Excela.
+    Pobiera dane z arkuszy MasterPrompt i CaseStudy.
+    """
+    try:
+        df_prompt = pd.read_excel(config_file_path, sheet_name='MasterPrompt')
+        df_case_study = pd.read_excel(config_file_path, sheet_name='CaseStudy')
+        
+        # Budowanie master promtu z arkusza MasterPrompt (kolumny: Sekcja, Tekst)
+        prompt_parts = []
+        for _, row in df_prompt.iterrows():
+            prompt_parts.append(str(row['Tekst']))
+        
+        # Budowanie case study z arkusza CaseStudy (kolumny: Element, Opis)
+        case_study_parts = []
+        for _, row in df_case_study.iterrows():
+            case_study_parts.append(f"{row['Element']}: {row['Opis']}")
+        
+        case_study_full = "\n".join(case_study_parts)
+        
+        # Składanie pełnego promptu
+        full_prompt = "\n\n".join(prompt_parts)
+        full_prompt = full_prompt.replace("{{CASE_STUDY}}", case_study_full)
+        
+        return full_prompt
+        
+    except Exception as e:
+        print(f"⚠️  Błąd odczytu master promptu z Excela: {e}")
+        return "Jesteś ekspertem psychologiem i analitykiem. Twórz głębokie, analityczne artykuły w języku polskim."
 
-# === KROK 4: Logika Wyboru Inspiracji ===
-def get_used_topics():
-    """Wczytuje użyte tematy z pliku."""
-    if not USED_TOPICS_FILE.exists():
+# === KROK 3: Zaktualizowana Logika Wyboru Tematu ===
+def get_used_titles():
+    """Wczytuje użyte tytuły artykułów z pliku historii."""
+    if not HISTORY_FILE.exists():
         return set()
-    with open(USED_TOPICS_FILE, 'r', encoding='utf-8') as f:
+    with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
         return set(line.strip() for line in f)
 
-def save_used_topic(topic: str):
-    """Zapisuje użyty temat do pliku."""
-    with open(USED_TOPICS_FILE, 'a', encoding='utf-8') as f:
-        f.write(topic + '\n')
+def save_used_topic_title(title: str):
+    """WERSJA 7.0: Zapisuje użyty tytuł do pliku historii."""
+    with open(HISTORY_FILE, 'a', encoding='utf-8') as f:
+        f.write(title + '\n')
 
-def get_current_campaign(config: dict) -> str:
-    """Określa bieżącą kampanię na podstawie daty."""
-    today = datetime.date.today()
-    campaign_names = list(config.get("campaigns", {}).keys())
-    if not campaign_names:
+def pick_topic_package(config: dict) -> dict:
+    """
+    NOWOŚĆ WERSJI 7.0: Wybiera kompletny pakiet zadaniowy z matrycy Excel.
+    Zwraca słownik z polami: campaign, title, thesis, keywords.
+    """
+    campaign_topics = config.get('campaign_topics', [])
+    if not campaign_topics:
+        print("❌ Brak dostępnych pakietów zadaniowych w konfiguracji.")
         return None
-    # Prosta logika rotacji kampanii co tydzień
-    week_number = today.isocalendar()[1]
-    campaign_index = week_number % len(campaign_names)
-    return campaign_names[campaign_index]
-
-def pick_inspiration(config: dict) -> tuple[str, str] | tuple[None, None]:
-    """Wybiera nową, nieużytą inspirację z bieżącej kampanii."""
-    campaign_name = get_current_campaign(config)
-    if not campaign_name:
-        print("Brak zdefiniowanych kampanii w konfiguracji.")
-        return None, None
-
-    inspirations = config["campaigns"].get(campaign_name, [])
-    used_topics = get_used_topics()
     
-    available_inspirations = [insp for insp in inspirations if insp not in used_topics]
+    used_titles = get_used_titles()
     
-    if not available_inspirations:
-        print(f"Wszystkie inspiracje z kampanii '{campaign_name}' zostały już wykorzystane.")
-        # Opcjonalnie: zresetuj listę użytych tematów dla tej kampanii
-        return None, None
-        
-    chosen_inspiration = random.choice(available_inspirations)
-    print(f"Wybrano temat '{chosen_inspiration}' z kampanii '{campaign_name}'.")
-    return chosen_inspiration, campaign_name
+    # Filtrowanie nieużytych pakietów
+    available_packages = [
+        pkg for pkg in campaign_topics 
+        if pkg['title'] not in used_titles
+    ]
+    
+    if not available_packages:
+        print("⚠️ Wszystkie pakiety zadaniowe zostały już wykorzystane.")
+        print("💡 Resetowanie historii użycia...")
+        # Opcjonalnie: zresetuj historię i wybierz losowo
+        available_packages = campaign_topics
+    
+    # Wybór losowego pakietu
+    chosen_package = random.choice(available_packages)
+    
+    # Zapisanie tytułu do historii
+    save_used_topic_title(chosen_package['title'])
+    
+    print(f"📋 [v7.0] Wybrany pakiet zadaniowy:")
+    print(f"    🏷️  Kampania: {chosen_package['campaign']}")
+    print(f"    📰 Tytuł: {chosen_package['title']}")
+    print(f"    💡 Teza: {chosen_package['thesis'][:100]}...")
+    print(f"    🔑 Słowa kluczowe: {chosen_package['keywords']}")
+    
+    return chosen_package
+
+# Usunięto stare funkcje - zastąpione przez pick_topic_package() w wersji 7.0
 
 # === KROK 5: System Generowania Treści Offline ===
-def generate_offline_content(inspiration: str) -> str:
+def generate_offline_content(topic_package: dict) -> str:
     """Generuje przyzwoitą treść offline gdy API nie działa."""
+    title = topic_package.get('title', 'Analiza Tematyczna')
+    thesis = topic_package.get('thesis', 'tematyka wymagająca głębszej analizy')
+    keywords = topic_package.get('keywords', 'psychologia, analiza, studium przypadku')
+    
     sections = [
-        f"<h1>{inspiration}</h1>",
-        f"<p>Temat <strong>{inspiration.lower()}</strong> stanowi fascynujące pole badawcze w kontekście współczesnych wyzwań psychologicznych i społecznych.</p>",
+        f"<h1>{title}</h1>",
+        f"<p>Tematyka <strong>{title.lower()}</strong> stanowi fascynujące pole badawcze w kontekście współczesnych wyzwań psychologicznych i społecznych.</p>",
+        f"<h2>Teza Główna</h2>",
+        f"<p>{thesis}</p>",
         f"<h2>Kontekst Problemu</h2>",
-        f"<p>W kontekście analizowanego studium przypadku, {inspiration.lower()} ujawnia się jako kluczowy element wpływający na dynamikę relacyjną i rozwój osobisty.</p>",
+        f"<p>W kontekście analizowanego studium przypadku, omawiane zagadnienie ujawnia się jako kluczowy element wpływający na dynamikę relacyjną i rozwój osobisty.</p>",
         f"<h2>Analiza Psychologiczna</h2>",
         f"<p>Psychologiczne mechanizmy leżące u podstaw tego zjawiska wskazują na głębokie wzorce behawioralne, które wymagają starannej analizy i zrozumienia.</p>",
-        f"<p>Badania wskazują, że {inspiration.lower()} może mieć długotrwałe konsekwencje dla:</p>",
-        f"<ul><li>Zdrowia psychicznego jednostki</li><li>Jakości relacji interpersonalnych</li><li>Rozwoju osobistego i samopoznania</li><li>Zdolności do budowania zaufania</li></ul>",
-        f"<h2>Implikacje Praktyczne</h2>",
-        f"<p>Zrozumienie mechanizmów związanych z {inspiration.lower()} może pomóc w:</p>",
-        f"<ul><li>Rozpoznawaniu wczesnych sygnałów ostrzegawczych</li><li>Opracowywaniu skutecznych strategii interwencyjnych</li><li>Budowaniu odporności psychicznej</li></ul>",
+        f"<p>Kluczowe aspekty związane z: {keywords}.</p>",
         f"<h2>Wnioski</h2>",
-        f"<p>Analiza {inspiration.lower()} podkreśla wagę holistycznego podejścia do zdrowia psychicznego i jakości relacji. Wymaga to nie tylko zrozumienia teorii, ale także praktycznego zastosowania wiedzy w codziennym życiu.</p>",
+        f"<p>Analiza podkreśla wagę holistycznego podejścia do zdrowia psychicznego i jakości relacji. Wymaga to nie tylko zrozumienia teorii, ale także praktycznego zastosowania wiedzy w codziennym życiu.</p>",
         f"<p><em>Ten artykuł został wygenerowany w trybie offline. Pełna analiza z wykorzystaniem sztucznej inteligencji będzie dostępna po przywróceniu połączenia z API.</em></p>"
     ]
     return "\n".join(sections)
 
 # === KROK 6: Funkcja Generowania z Groq API ===
-def generate_with_groq(inspiration: str, master_prompt: str) -> dict:
+def generate_with_groq(topic_package: dict, master_prompt: str) -> dict:
     """Generuje artykuł używając Groq API jako alternatywy dla Gemini."""
     print("🦙 Próbuję generować treść z Groq API...")
     
+    # NOWOŚĆ WERSJI 7.0: Ultra-precyzyjny prompt z gotowymi danymi z Excela
     final_prompt = f"""{master_prompt}
 
-Twoim dzisiejszym zadaniem jest napisanie artykułu inspirowanego poniższą frazą.
+🎯 **ULTRA-PRECYZYJNE ZADANIE WERSJI 7.0:**
 
-INSPIRACJA: "{inspiration}"
+Musisz napisać artykuł, który realizuje DOKŁADNIE poniższe specyfikacje z matrycy Excel:
 
-Twoje zadania:
-1.  **Wymyśl Tytuł:** Stwórz kreatywny, intrygujący i unikalny tytuł dla artykułu, który nawiązuje do inspiracji i studium przypadku.
-2.  **Napisz Artykuł:** Napisz głęboki, analityczny artykuł. Masz pełną swobodę co do jego struktury. Możesz używać nagłówków, list, cytatów. Artykuł musi być napisany w formacie HTML.
-3.  **Wygeneruj Meta Opis:** Stwórz krótki (150-160 znaków) meta opis, który jest esencją artykułu i zachęca do kliknięcia.
-4.  **Stwórz Sekcję FAQ:** Przygotuj 3-4 pytania i odpowiedzi w formacie JSON-LD, które rozwijają kluczowe aspekty artykułu.
+📰 **OBOWIĄZKOWY TYTUŁ (nie zmieniaj!):** 
+"{topic_package['title']}"
 
-Całość zwróć jako pojedynczy obiekt JSON, bez żadnych dodatkowych znaków czy formatowania markdown.
+💡 **TEZA DO UDOWODNIENIA:** 
+{topic_package['thesis']}
 
-Struktura JSON-a:
+🔑 **WYMAGANE SŁOWA KLUCZOWE (użyj w tekście):** 
+{topic_package['keywords']}
+
+🏷️ **KAMPANIA:** {topic_package['campaign']}
+
+**TWOJE ZADANIA:**
+1. **Użyj DOKŁADNIE podanego tytułu** - bez żadnych zmian!
+2. **Udowodnij podaną tezę** - artykuł musi logicznie prowadzić do jej potwierdzenia
+3. **Wpleć słowa kluczowe** naturalnie w treść artykułu
+4. **Napisz artykuł w formacie HTML** z nagłówkami, akapitami, listami
+5. **Stwórz meta opis** (150-160 znaków) 
+6. **Przygotuj sekcję FAQ** w HTML
+7. **Dodaj powiązane artykuły** w HTML
+
+Zwróć wynik jako JSON:
+
 {{
-  "title": "Twój wymyślony, kreatywny tytuł",
-  "meta_description": "Twój wygenerowany meta opis (150-160 znaków).",
-  "html_content": "<h1>Twój Tytuł</h1><p>Cała treść artykułu w formacie <b>HTML</b>...",
-  "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2><div class='faq-item'>Sekcja FAQ w HTML...</div></div>",
-  "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2><ul><li><a href='#'>Tytuł powiązanego artykułu</a></li></ul></div>",
-  "faq_json_ld": {{
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {{
-        "@type": "Question",
-        "name": "Pierwsze pytanie?",
-        "acceptedAnswer": {{
-          "@type": "Answer",
-          "text": "Odpowiedź na pierwsze pytanie."
-        }}
-      }}
-    ]
-  }}
+  "title": "{topic_package['title']}",
+  "meta_description": "Meta opis 150-160 znaków...",
+  "html_content": "<h1>{topic_package['title']}</h1><p>Treść artykułu w HTML...</p>",
+  "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2>...</div>",
+  "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2>...</div>",
+  "faq_json_ld": {{ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [] }}
 }}
 """
 
@@ -263,64 +298,67 @@ Struktura JSON-a:
         print(f"❌ Groq API Error: {e}")
         return None
 
-# === KROK 7: Główny, Kreatywny Silnik Generowania Treści ===
-def generate_creative_article(inspiration: str, master_prompt: str) -> dict:
-    """Generuje kreatywny artykuł na podstawie inspiracji, zwracając JSON."""
+# === KROK 7: Główny Silnik Generowania Artykułów WERSJA 7.0 ===
+def generate_article(topic_package: dict, master_prompt: str) -> dict:
+    """
+    WERSJA 7.0: Generuje artykuł na podstawie precyzyjnego pakietu tematycznego z Excela.
+    Wykorzystuje deterministyczne dane: tytuł, tezę, słowa kluczowe i kampanię.
+    """
     
-    final_prompt = f"""{master_prompt}
+    # NOWOŚĆ WERSJI 7.0: Wszystkie dane z topic_package
+    print(f"\n🎯 Generuję artykuł z matrycy Excel...")
+    print(f"📰 Tytuł: {topic_package['title']}")
+    print(f"💡 Teza: {topic_package['thesis']}")
+    print(f"🔑 Słowa kluczowe: {topic_package['keywords']}")
+    print(f"🏷️ Kampania: {topic_package['campaign']}")
 
-Twoim dzisiejszym zadaniem jest napisanie artykułu inspirowanego poniższą frazą.
-
-INSPIRACJA: "{inspiration}"
-
-Twoje zadania:
-1.  **Wymyśl Tytuł:** Stwórz kreatywny, intrygujący i unikalny tytuł dla artykułu, który nawiązuje do inspiracji i studium przypadku.
-2.  **Napisz Artykuł:** Napisz głęboki, analityczny artykuł. Masz pełną swobodę co do jego struktury. Możesz używać nagłówków, list, cytatów. Artykuł musi być napisany w formacie HTML.
-3.  **Wygeneruj Meta Opis:** Stwórz krótki (150-160 znaków) meta opis, który jest esencją artykułu i zachęca do kliknięcia.
-4.  **Stwórz Sekcję FAQ:** Przygotuj 3-4 pytania i odpowiedzi w formacie JSON-LD, które rozwijają kluczowe aspekty artykułu.
-
-Całość zwróć jako pojedynczy obiekt JSON, bez żadnych dodatkowych znaków czy formatowania markdown.
-
-Struktura JSON-a:
-{{
-  "title": "Twój wymyślony, kreatywny tytuł",
-  "meta_description": "Twój wygenerowany meta opis (150-160 znaków).",
-  "html_content": "<h1>Twój Tytuł</h1><p>Cała treść artykułu w formacie <b>HTML</b>...",
-  "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2><div class='faq-item'>Sekcja FAQ w HTML...</div></div>",
-  "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2><ul><li><a href='#'>Tytuł powiązanego artykułu</a></li></ul></div>",
-  "faq_json_ld": {{
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {{
-        "@type": "Question",
-        "name": "Pierwsze pytanie?",
-        "acceptedAnswer": {{
-          "@type": "Answer",
-          "text": "Odpowiedź na pierwsze pytanie."
-        }}
-      }},
-      {{
-        "@type": "Question",
-        "name": "Drugie pytanie?",
-        "acceptedAnswer": {{
-          "@type": "Answer",
-          "text": "Odpowiedź na drugie pytanie."
-        }}
-      }}
-    ]
-  }}
-}}
-"""
     
+    # Przygotowanie fallback na wypadek awarii API
     fallback_content = {
-        "title": f"Analiza tematu: {inspiration}",
-        "meta_description": "W tym artykule przyglądamy się bliżej zagadnieniu, analizując jego różne aspekty w kontekście studium przypadku.",
-        "html_content": generate_offline_content(inspiration),
+        "title": topic_package['title'],
+        "meta_description": f"Analiza tematu: {topic_package['title'][:130]}...",
+        "html_content": generate_offline_content(topic_package),
         "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2><div class='faq-item'><h3>Czym charakteryzuje się to zagadnienie?</h3><p>Jest to złożone zjawisko wymagające dogłębnej analizy psychologicznej.</p></div></div>",
         "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2><p><em>Artykuły powiązane będą dostępne po wygenerowaniu większej ilości treści.</em></p></div>",
         "faq_json_ld": {}
     }
+
+    # WERSJA 7.0: Budowanie ultra-precyzyjnego promptu
+    final_prompt = f"""{master_prompt}
+
+🎯 **ULTRA-PRECYZYJNE ZADANIE WERSJI 7.0:**
+
+Musisz napisać artykuł, który realizuje DOKŁADNIE poniższe specyfikacje z matrycy Excel:
+
+📰 **OBOWIĄZKOWY TYTUŁ (nie zmieniaj!):** 
+"{topic_package['title']}"
+
+💡 **TEZA DO UDOWODNIENIA:** 
+{topic_package['thesis']}
+
+🔑 **WYMAGANE SŁOWA KLUCZOWE (użyj w tekście):** 
+{topic_package['keywords']}
+
+🏷️ **KAMPANIA:** {topic_package['campaign']}
+
+**TWOJE ZADANIA:**
+1. **Użyj DOKŁADNIE podanego tytułu** - bez żadnych zmian!
+2. **Udowodnij podaną tezę** - artykuł musi logicznie prowadzić do jej potwierdzenia
+3. **Wpleć słowa kluczowe** naturalnie w treść artykułu
+4. **Napisz artykuł w formacie HTML** z nagłówkami, akapitami, listami
+5. **Stwórz meta opis** (150-160 znaków) 
+6. **Przygotuj sekcję FAQ** w HTML
+7. **Dodaj powiązane artykuły** w HTML
+
+Zwróć wynik jako JSON:
+{{
+  "title": "{topic_package['title']}",
+  "meta_description": "Meta opis 150-160 znaków...",
+  "html_content": "<h1>{topic_package['title']}</h1><p>Treść artykułu w HTML...</p>",
+  "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2>...</div>",
+  "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2>...</div>",
+  "faq_json_ld": {{ "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [] }}
+}}"""
 
     # FASE 1: Próby z Gemini API
     print("🤖 Próbuję generować treść z Gemini API...")
@@ -356,10 +394,10 @@ Struktura JSON-a:
                 print("   ⏳ Ponawiam próbę za 15 sekund...")
                 time.sleep(15)
 
-    # FASE 2: Próba z Groq API
+    # FASE 2: Próba z Groq API (WERSJA 7.0)
     if GROQ_API_KEY:
         print("🔄 Gemini niedostępny, próbuję z Groq API...")
-        groq_result = generate_with_groq(inspiration, master_prompt)
+        groq_result = generate_with_groq(topic_package, master_prompt)
         if groq_result:
             return groq_result
         else:
@@ -572,25 +610,29 @@ def main():
     print(f"Data: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
     
+    # WERSJA 7.0: Pełna matryca tematyczna z Excela
     try:
-        config = load_config_from_excel(CONFIG_FILE)
+        topic_packages = load_config_from_excel(CONFIG_FILE)
     except Exception as e:
         print(f"❌ Zatrzymano skrypt z powodu błędu konfiguracji: {e}")
         return
 
-    inspiration, campaign = pick_inspiration(config)
-    if not inspiration:
-        print("❌ Nie udało się wybrać inspiracji na dziś. Kończę pracę.")
+    topic_package = pick_topic_package(topic_packages)
+    if not topic_package:
+        print("❌ Nie udało się wybrać pakietu tematycznego. Kończę pracę.")
         return
 
-    print(f"✅ Wybrana inspiracja: '{inspiration}'")
-    print(f"✅ Kampania: '{campaign}'")
+    print(f"✅ Wybrany pakiet tematyczny:")
+    print(f"   📰 Tytuł: {topic_package['title']}")
+    print(f"   💡 Teza: {topic_package['thesis']}")
+    print(f"   🔑 Słowa kluczowe: {topic_package['keywords']}")
+    print(f"   🏷️ Kampania: {topic_package['campaign']}")
     print()
 
-    master_prompt = build_master_prompt(config)
+    master_prompt = build_master_prompt_from_config(CONFIG_FILE)
     
-    print("🚀 Rozpoczynam generowanie artykułu...")
-    article_data = generate_creative_article(inspiration, master_prompt)
+    print("🚀 Rozpoczynam generowanie artykułu z matrycą Excel...")
+    article_data = generate_article(topic_package, master_prompt)
     
     if not article_data or not article_data.get("title"):
         print("❌ Nie udało się wygenerować danych artykułu. Kończę pracę.")
@@ -613,8 +655,8 @@ def main():
     print(f"{status_icon} Wygenerowano artykuł ({content_type}): '{article_data['title']}'")
     print()
 
-    # Zapisanie użytej inspiracji
-    save_used_topic(inspiration)
+    # WERSJA 7.0: Zapisanie użytego tytułu
+    save_used_topic_title(topic_package['title'])
 
     # Przygotowanie nazwy pliku i URL
     slug = slugify(article_data['title'])
@@ -628,7 +670,7 @@ def main():
         with open(POST_TEMPLATE_FILE, 'r', encoding='utf-8') as f:
             template_content = f.read()
         
-        post_html = build_post_html(template_content, article_data, campaign, post_url)
+        post_html = build_post_html(template_content, article_data, topic_package['campaign'], post_url)
         
         PAGES_DIR.mkdir(parents=True, exist_ok=True)
         with open(filepath, 'w', encoding='utf-8') as f:
@@ -645,7 +687,7 @@ def main():
 
     # Aktualizacja plików głównych
     print("🔄 Aktualizuję pliki główne...")
-    insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", campaign)
+    insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", topic_package['campaign'])
     update_sitemap_and_rss(post_url, article_data['title'], article_data['meta_description'])
     update_spis_tresci(f"pages/{filename}", article_data['title'], article_data['meta_description'])
     print("✅ Zaktualizowano: index.html, sitemap.xml, rss.xml, spis.html")
