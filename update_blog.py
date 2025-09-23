@@ -11,6 +11,12 @@ import json
 import difflib
 from pathlib import Path
 from typing import List, Optional, Dict
+import locale
+
+try:
+    locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
+except locale.Error:
+    print("[OSTRZEŻENIE] Nie można ustawić polskiego locale. Daty mogą być po angielsku.")
 
 from bs4 import BeautifulSoup
 from git import Repo
@@ -302,6 +308,7 @@ def build_post_html(data: dict, date: dt.date, slug: str) -> str:
             .replace("{{KATEGORIA}}", category)
             .replace("{{KANONICAL}}", f"{BASE_URL}/pages/{slug}.html")
             .replace("{{DATA}}", date.strftime("%Y-%m-%d"))
+            .replace("{{DATA_LUDZKA}}", date.strftime('%d %B %Y'))
             .replace("{{TRESC_HTML}}", html_content)
             .replace("{{FAQ_HTML}}", faq_html)
             .replace("{{POWIAZANE_POSTY_HTML}}", related_html)
