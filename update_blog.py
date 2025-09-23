@@ -77,29 +77,30 @@ def load_config_from_excel(path: Path) -> dict:
     }
 
     try:
-        # Wczytywanie MasterPrompt (bez zmian)
-        df_prompt = pd.read_excel(path, sheet_name='MasterPrompt', header=None)
-        df_prompt.columns = ['key', 'value']
-        config['master_prompt_parts'] = dict(zip(df_prompt['key'], df_prompt['value']))
+        # Wczytywanie MasterPrompt z właściwymi nagłówkami
+        df_prompt = pd.read_excel(path, sheet_name='MasterPrompt')
+        # Arkusz ma kolumny: Klucz, Wartość
+        config['master_prompt_parts'] = dict(zip(df_prompt['Klucz'], df_prompt['Wartość']))
 
-        # Wczytywanie CaseStudy (bez zmian)
-        df_case = pd.read_excel(path, sheet_name='CaseStudy', header=None)
-        df_case.columns = ['key', 'value']
-        config['case_study'] = dict(zip(df_case['key'], df_case['value']))
+        # Wczytywanie CaseStudy z właściwymi nagłówkami
+        df_case = pd.read_excel(path, sheet_name='CaseStudy')
+        # Arkusz ma kolumny: Kategoria, Szczegół
+        config['case_study'] = dict(zip(df_case['Kategoria'], df_case['Szczegół']))
 
         # KLUCZOWA ZMIANA: Wczytywanie pełnej matrycy tematycznej
-        df_topics = pd.read_excel(path, sheet_name='KampanieTematyczne', header=None)
-        df_topics.columns = ['campaign', 'title', 'thesis', 'keywords']
+        df_topics = pd.read_excel(path, sheet_name='KampanieTematyczne')
+        # Arkusz ma nagłówki: Kampania, Tytuł Artykułu, Teza Główna, Słowa Kluczowe - używamy oryginalnych nazw
         
         # Przekształcenie do listy słowników - każdy wiersz to kompletny "pakiet zadaniowy"
         campaign_topics = []
         for _, row in df_topics.iterrows():
-            if pd.notna(row['campaign']) and pd.notna(row['title']):
+            # Używamy prawdziwych nazw kolumn z arkusza
+            if pd.notna(row['Kampania']) and pd.notna(row['Tytuł Artykułu']):
                 topic_package = {
-                    'campaign': str(row['campaign']).strip(),
-                    'title': str(row['title']).strip(),
-                    'thesis': str(row['thesis']).strip() if pd.notna(row['thesis']) else '',
-                    'keywords': str(row['keywords']).strip() if pd.notna(row['keywords']) else ''
+                    'campaign': str(row['Kampania']).strip(),
+                    'title': str(row['Tytuł Artykułu']).strip(),
+                    'thesis': str(row['Teza Główna']).strip() if pd.notna(row['Teza Główna']) else '',
+                    'keywords': str(row['Słowa Kluczowe']).strip() if pd.notna(row['Słowa Kluczowe']) else ''
                 }
                 campaign_topics.append(topic_package)
         
@@ -123,15 +124,15 @@ def build_master_prompt_from_config(config_file_path: Path) -> str:
         df_prompt = pd.read_excel(config_file_path, sheet_name='MasterPrompt')
         df_case_study = pd.read_excel(config_file_path, sheet_name='CaseStudy')
         
-        # Budowanie master promtu z arkusza MasterPrompt (kolumny: Sekcja, Tekst)
+        # Budowanie master promtu z arkusza MasterPrompt (kolumny: Klucz, Wartość)
         prompt_parts = []
         for _, row in df_prompt.iterrows():
-            prompt_parts.append(str(row['Tekst']))
+            prompt_parts.append(str(row['Wartość']))
         
-        # Budowanie case study z arkusza CaseStudy (kolumny: Element, Opis)
+        # Budowanie case study z arkusza CaseStudy (kolumny: Kategoria, Szczegół)
         case_study_parts = []
         for _, row in df_case_study.iterrows():
-            case_study_parts.append(f"{row['Element']}: {row['Opis']}")
+            case_study_parts.append(f"{row['Kategoria']}: {row['Szczegół']}")
         
         case_study_full = "\n".join(case_study_parts)
         
