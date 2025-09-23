@@ -719,26 +719,14 @@ def main():
         print(f"Błąd podczas tworzenia pliku HTML: {e}")
         return
 
-    # Aktualizacja plików głównych (OCHRONA przed nadpisaniem)
+    # Aktualizacja plików głównych (TYLKO BEZPIECZNE PLIKI)
     print("🔄 Aktualizuję pliki główne...")
     
-    # BEZPIECZEŃSTWO: Sprawdzamy czy pliki nie zostały ręcznie edytowane
-    index_safe = check_file_safe_for_updates(INDEX_FILE)
-    spis_safe = check_file_safe_for_updates(SPIS_TRESCI_FILE)
+    # CAŁKOWITE WYŁĄCZENIE aktualizacji frontend plików
+    print("⚠️  TRYB BEZPIECZEŃSTWA: Pomijam aktualizację index.html i spis.html")
+    print("📝 Nowe artykuły należy dodać ręcznie do interfejsu")
     
-    if index_safe:
-        insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", topic_package['campaign'])
-        print("✅ Zaktualizowano: index.html")
-    else:
-        print("⚠️  Pominięto aktualizację index.html (plik ręcznie edytowany)")
-    
-    if spis_safe:
-        update_spis_tresci(f"pages/{filename}", article_data['title'], article_data['meta_description'])
-        print("✅ Zaktualizowano: spis.html")
-    else:
-        print("⚠️  Pominięto aktualizację spis.html (plik ręcznie edytowany)")
-        
-    # RSS i sitemap aktualizujemy zawsze (są bezpieczne)
+    # Tylko RSS i sitemap (bezpieczne do automatyzacji)
     update_sitemap_and_rss(post_url, article_data['title'], article_data['meta_description'])
     print("✅ Zaktualizowano: sitemap.xml, rss.xml")
 
