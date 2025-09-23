@@ -620,36 +620,7 @@ def enforce_word_limit(html_content: str, max_words: int = 300) -> str:
     return "\n".join(f"<p>{p}</p>" for p in out_paragraphs)
 
 
-def generate_article(topic: str, master_prompt: str) -> str:
-    """Generuje artykuł wykorzystując pełny MASTER_PROMPT.
-
-    Wymagania stylu: 250–300 słów, akapity w <p>, ważne frazy w <strong>.
-    """
-    if GEMINI_API_KEY == "WPROWADZ_KLUCZ_LOKALNIE":
-        raise RuntimeError("Brak klucza API – nie można użyć generate_article")
-    try:
-        import google.generativeai as gen  # type: ignore
-    except Exception as e:  # pragma: no cover
-        raise RuntimeError(f"Brak biblioteki google-generativeai: {e}")
-
-    gen.configure(api_key=GEMINI_API_KEY)
-    model_name = os.getenv("GEMINI_MODEL_ARTICLE", "gemini-1.5-flash-latest")
-    model = gen.GenerativeModel(model_name)
-    prompt = (
-        master_prompt
-        + "\n---\nAKTUALNY TEMAT: "
-        + topic
-        + "\nInstrukcja formatowania: 250-300 słów; zacznij od razu treścią bez tytułu; 5 akapitów w <p>; używaj <strong> dla kluczowych fraz; brak list, brak nagłówków.\n---\nGENERUJ TERAZ:"
-    )
-    response = model.generate_content(prompt)
-    raw_text = response.text if hasattr(response, "text") else "".join(p.text for p in response.parts)  # type: ignore
-    raw_text = sanitize_generated_text(raw_text)
-    raw_text = ensure_paragraphs(raw_text)
-    raw_text = enforce_word_limit(raw_text, 300)
-    return raw_text
-
-
-def generate_full_article_from_master_prompt(topic: str, master_prompt: Optional[str]) -> dict:
+def generate_full_article_from_master_prompt(topic: str) -> dict:
     """NOWA FUNKCJA GŁÓWNA: Generuje pełny artykuł ZAWSZE używając MASTER PROMPT jeśli dostępny.
 
     Zwraca dict(title, description, html_content, mode, faq) w formacie zgodnym z poprzednim fetch_ai_article.
@@ -661,6 +632,8 @@ def generate_full_article_from_master_prompt(topic: str, master_prompt: Optional
     - Minimalne ryzyko: nie usuwamy jeszcze fetch_ai_article (oznaczamy jako deprecated) do czasu pełnej migracji create_post.
     """
     description_limit = 155
+    # Ładuj master prompt wewnątrz (centralizacja)
+    master_prompt = load_master_prompt()
     # Konfiguracja długości
     try:
         target_min = int(os.getenv("ART_MIN_WORDS", "650"))
@@ -697,6 +670,7 @@ Docelowa długość: {target_min}–{target_max} słów (twarde maksimum {int(ta
             gen.configure(api_key=GEMINI_API_KEY)
             model_name = os.getenv("GEMINI_MODEL_ARTICLE", "gemini-1.5-flash-latest")
             model = gen.GenerativeModel(model_name)
+            print("Wysyłanie zapytania do Gemini z pełnym kontekstem...")
             prompt = (
                 master_prompt
                 + "\n---\nAKTUALNY TEMAT: " + topic
@@ -2102,8 +2076,8 @@ def create_post(for_date: dt.date | None = None, skip_index: bool = False):
     topic = pick_topic(for_date=for_date)
     current_campaign = get_current_campaign(today)
     # NOWY PRZEPŁYW: zawsze próbuj użyć MASTER PROMPT (jeśli aktywny)
-    master_prompt = load_master_prompt()
-    data = generate_full_article_from_master_prompt(topic, master_prompt)
+    # Funkcja generatora sama załaduje master prompt
+    data = generate_full_article_from_master_prompt(topic)
     slug = slugify(data["title"]) + f"-{today.strftime('%Y%m%d')}"
     post_path = PAGES_DIR / f"{slug}.html"
     html = build_post_html(data, today, slug)
