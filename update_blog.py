@@ -211,6 +211,8 @@ Struktura JSON-a:
   "title": "Twój wymyślony, kreatywny tytuł",
   "meta_description": "Twój wygenerowany meta opis (150-160 znaków).",
   "html_content": "<h1>Twój Tytuł</h1><p>Cała treść artykułu w formacie <b>HTML</b>...",
+  "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2><div class='faq-item'>Sekcja FAQ w HTML...</div></div>",
+  "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2><ul><li><a href='#'>Tytuł powiązanego artykułu</a></li></ul></div>",
   "faq_json_ld": {{
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -249,7 +251,7 @@ Struktura JSON-a:
         parsed_json = json.loads(response_text)
         
         # Walidacja kluczy
-        required_keys = ["title", "meta_description", "html_content", "faq_json_ld"]
+        required_keys = ["title", "meta_description", "html_content", "faq_html", "related_articles_html", "faq_json_ld"]
         if all(key in parsed_json for key in required_keys):
             print("✅ Groq API: Artykuł wygenerowany pomyślnie!")
             return parsed_json
@@ -284,6 +286,8 @@ Struktura JSON-a:
   "title": "Twój wymyślony, kreatywny tytuł",
   "meta_description": "Twój wygenerowany meta opis (150-160 znaków).",
   "html_content": "<h1>Twój Tytuł</h1><p>Cała treść artykułu w formacie <b>HTML</b>...",
+  "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2><div class='faq-item'>Sekcja FAQ w HTML...</div></div>",
+  "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2><ul><li><a href='#'>Tytuł powiązanego artykułu</a></li></ul></div>",
   "faq_json_ld": {{
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -313,6 +317,8 @@ Struktura JSON-a:
         "title": f"Analiza tematu: {inspiration}",
         "meta_description": "W tym artykule przyglądamy się bliżej zagadnieniu, analizując jego różne aspekty w kontekście studium przypadku.",
         "html_content": generate_offline_content(inspiration),
+        "faq_html": "<div class='faq-section'><h2>Najczęściej zadawane pytania</h2><div class='faq-item'><h3>Czym charakteryzuje się to zagadnienie?</h3><p>Jest to złożone zjawisko wymagające dogłębnej analizy psychologicznej.</p></div></div>",
+        "related_articles_html": "<div class='related-articles'><h2>Artykuły powiązane</h2><p><em>Artykuły powiązane będą dostępne po wygenerowaniu większej ilości treści.</em></p></div>",
         "faq_json_ld": {}
     }
 
@@ -334,7 +340,7 @@ Struktura JSON-a:
             parsed_json = json.loads(cleaned_response_text)
             
             # Walidacja kluczy
-            required_keys = ["title", "meta_description", "html_content", "faq_json_ld"]
+            required_keys = ["title", "meta_description", "html_content", "faq_html", "related_articles_html", "faq_json_ld"]
             if all(key in parsed_json for key in required_keys):
                 print("✅ Gemini API: Artykuł wygenerowany pomyślnie!")
                 return parsed_json
@@ -397,11 +403,10 @@ def build_post_html(template_content: str, data: dict, campaign: str, post_url: 
     else:
         faq_script = ""
     
-    # W szablonie nie ma {{FAQ_JSON_LD}}, ale zostawiam na przyszłość.
-    # Zamiast tego, FAQ jest częścią {{FAQ_HTML}} - na razie puste.
+    # Wstawianie sekcji FAQ i powiązanych artykułów
     html = html.replace("{{FAQ_JSON_LD}}", faq_script)
-    html = html.replace("{{FAQ_HTML}}", "") # Na razie puste
-    html = html.replace("{{POWIAZANE_POSTY_HTML}}", "") # Na razie puste
+    html = html.replace("{{FAQ_HTML}}", data.get('faq_html', ''))
+    html = html.replace("{{POWIAZANE_POSTY_HTML}}", data.get('related_articles_html', ''))
     
     return html
 

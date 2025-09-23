@@ -1,4 +1,4 @@
-> titles_index.txt
+# Lista użytych tematów - resetowana> titles_index.txt
 Tematy Ogólne i Ponadczasowe|Rola Terapii w Przepracowywaniu Traum Relacyjnych
 Tematy Ogólne i Ponadczasowe|Jak Rozpoznać Czerwone Flagi na Początku Znajomości
 Tematy Ogólne i Ponadczasowe|Rola Uczciwości jako Fundamentu Trwałej Relacji
@@ -27,3 +27,4 @@ Syndrom Oszusta' w Relacjach: Lęk przed Byciem Zdemaskowanym
 Pułapka Samotności po Zdradzie: Dlaczego Trudno Zbudować Nową, Zdrową Relację
 Rola Tajemnicy w Budowaniu Fałszywego Poczucia Wyjątkowości
 Alergia na Nudę': Kiedy Stabilizacja Jest Odbierana jako Zagrożenie
+Ruminacje: Jak Umysł Oszusta Przetwarza Poczucie Winy

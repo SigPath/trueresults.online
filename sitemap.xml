@@ -1,19 +1,40 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<?xml version="1.0" encoding="UTF-8"?><?xml version="1.0" encoding="UTF-8"?>
+
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+
+    <loc>https://trueresults.online/</loc><url>
+
+    <lastmod>2025-01-27T00:00:00Z</lastmod>  <loc>https://trueresults.online/pages/analiza-tematu-czy-osoba-o-takich-wzorcach-moze-sie-zmienic-warunki-prawdziwej-transformacji-20250923.html</loc>
+
+    <changefreq>weekly</changefreq>  <lastmod>2025-09-23T13:36:45.410620</lastmod>
+
+    <priority>1.0</priority>  <priority>0.80</priority>
+
+  </url></url>
+
+  <url>
+
+    <loc>https://trueresults.online/spis.html</loc><url>
+
+    <lastmod>2025-01-27T00:00:00Z</lastmod>  <loc>https://trueresults.online/pages/analiza-tematu-jak-niska-samoocena-prowadzi-do-poszukiwania-potwierdzenia-w-ryzykownych-zachowaniach-20250923.html</loc>
+
+    <changefreq>weekly</changefreq>  <lastmod>2025-09-23T13:39:29.980994</lastmod>
+
+    <priority>0.8</priority>  <priority>0.80</priority>
+
+  </url></url>
+
+  <!-- AUTO-BLOG: Nowe wpisy będą wstawiane tutaj przez skrypt -->
+
 
 <url>
-  <loc>https://trueresults.online/pages/analiza-tematu-czy-osoba-o-takich-wzorcach-moze-sie-zmienic-warunki-prawdziwej-transformacji-20250923.html</loc>
-  <lastmod>2025-09-23T13:36:45.410620</lastmod>
+  <loc>https://trueresults.online/pages/mechanizm-umyslowy-jak-ruminacje-zaburzaja-poczucie-winy-20250923.html</loc>
+  <lastmod>2025-09-23T14:25:43.053991</lastmod>
   <priority>0.80</priority>
 </url>
-
-<url>
-  <loc>https://trueresults.online/pages/analiza-tematu-jak-niska-samoocena-prowadzi-do-poszukiwania-potwierdzenia-w-ryzykownych-zachowaniach-20250923.html</loc>
-  <lastmod>2025-09-23T13:39:29.980994</lastmod>
-  <priority>0.80</priority>
-</url>
-
-<url>
+</urlset><url>
   <loc>https://trueresults.online/pages/analiza-tematu-jak-presja-biologiczna-zegar-biologiczny-wplywa-na-moralnosc-w-relacjach-20250923.html</loc>
   <lastmod>2025-09-23T13:41:27.698677</lastmod>
   <priority>0.80</priority>
@@ -52,6 +73,12 @@
 <url>
   <loc>https://trueresults.online/pages/alergia-na-nude-gdy-stabilizacja-przypomina-zagrozenie-20250923.html</loc>
   <lastmod>2025-09-23T14:11:12.401962</lastmod>
+  <priority>0.80</priority>
+</url>
+
+<url>
+  <loc>https://trueresults.online/pages/mechanizm-umyslowy-jak-ruminacje-zaburzaja-poczucie-winy-20250923.html</loc>
+  <lastmod>2025-09-23T14:25:43.053991</lastmod>
   <priority>0.80</priority>
 </url>
 </urlset>

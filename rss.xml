@@ -1,17 +1,38 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0">
-<channel>
-  <title>True Results Online</title>
-  <link>https://trueresults.online</link>
-  <description>Prawda. Analiza. Zrozumienie. Nowoczesny blog z rygorystycznymi wglądami psychologicznymi i społecznymi.</description>
+<?xml version="1.0" encoding="UTF-8"?><?xml version="1.0" encoding="UTF-8" ?>
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><rss version="2.0">
+
+  <channel><channel>
+
+    <title>True Results Online</title>  <title>True Results Online</title>
+
+    <link>https://trueresults.online/</link>  <link>https://trueresults.online</link>
+
+    <description>Psychologicznie ugruntowane analizy dla głębszego zrozumienia rzeczywistości informacyjnej.</description>  <description>Prawda. Analiza. Zrozumienie. Nowoczesny blog z rygorystycznymi wglądami psychologicznymi i społecznymi.</description>
+
+    <language>pl-PL</language>  
+
+    <lastBuildDate>Mon, 27 Jan 2025 12:00:00 +0000</lastBuildDate>    <item>
+
+    <atom:link href="https://trueresults.online/rss.xml" rel="self" type="application/rss+xml"/>      <title>Analiza tematu: Czy Osoba o Takich Wzorcach Może się Zmienić? Warunki Prawdziwej Transformacji</title>
+
+          <link>https://trueresults.online/pages/analiza-tematu-czy-osoba-o-takich-wzorcach-moze-sie-zmienic-warunki-prawdziwej-transformacji-20250923.html</link>
+
+    <!-- AUTO-BLOG: Nowe wpisy będą wstawiane tutaj przez skrypt -->      <description>W tym artykule przyglądamy się bliżej zagadnieniu, analizując jego różne aspekty w kontekście studium przypadku.</description>
+
+          <pubDate>2025-09-23T13:36:45.410620</pubDate>
+
   
     <item>
-      <title>Analiza tematu: Czy Osoba o Takich Wzorcach Może się Zmienić? Warunki Prawdziwej Transformacji</title>
-      <link>https://trueresults.online/pages/analiza-tematu-czy-osoba-o-takich-wzorcach-moze-sie-zmienic-warunki-prawdziwej-transformacji-20250923.html</link>
-      <description>W tym artykule przyglądamy się bliżej zagadnieniu, analizując jego różne aspekty w kontekście studium przypadku.</description>
-      <pubDate>2025-09-23T13:36:45.410620</pubDate>
+      <title>Mechanizm Umysłowy: Jak Ruminacje Zaburzają Poczucie Winy</title>
+      <link>https://trueresults.online/pages/mechanizm-umyslowy-jak-ruminacje-zaburzaja-poczucie-winy-20250923.html</link>
+      <description>Odkryj, jak ruminacje wpływają na poczucie winy i jak możesz je uniknąć. Dowiedz się więcej o mechanizmach umysłowych, które utrudniają nam życie.</description>
+      <pubDate>2025-09-23T14:25:43.053991</pubDate>
     </item>
 
+  </channel>    </item>
+
+</rss>
   
     <item>
       <title>Analiza tematu: Jak Niska Samoocena Prowadzi do Poszukiwania Potwierdzenia w Ryzykownych Zachowaniach</title>
@@ -74,6 +95,14 @@
       <link>https://trueresults.online/pages/alergia-na-nude-gdy-stabilizacja-przypomina-zagrozenie-20250923.html</link>
       <description>Odkryj, jak niektóre osoby mogą odbierać stabilność jako zagrożenie, a nie jako źródło bezpieczeństwa. Dowiedz się, jakie są przyczyny i jakie są konsekwencje takiego zachowania.</description>
       <pubDate>2025-09-23T14:11:12.401962</pubDate>
+    </item>
+
+  
+    <item>
+      <title>Mechanizm Umysłowy: Jak Ruminacje Zaburzają Poczucie Winy</title>
+      <link>https://trueresults.online/pages/mechanizm-umyslowy-jak-ruminacje-zaburzaja-poczucie-winy-20250923.html</link>
+      <description>Odkryj, jak ruminacje wpływają na poczucie winy i jak możesz je uniknąć. Dowiedz się więcej o mechanizmach umysłowych, które utrudniają nam życie.</description>
+      <pubDate>2025-09-23T14:25:43.053991</pubDate>
     </item>
 
   </channel>
