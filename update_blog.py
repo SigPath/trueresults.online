@@ -55,35 +55,60 @@ safety_settings = [
     {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
 ]
 
-# === KROK 2: Wczytywanie Konfiguracji z Pliku Excel ===
+# === KROK 2: Wczytywanie Konfiguracji z Pliku Excel (Wersja Odporna na Błędy) ===
 def load_config_from_excel(path: Path) -> dict:
-    """Wczytuje konfigurację z pliku Excel."""
-    try:
-        xls = pd.ExcelFile(path)
-        master_prompt_df = xls.parse('MasterPrompt', header=None)
-        case_study_df = xls.parse('CaseStudy', header=None)
-        kampanie_df = xls.parse('KampanieTematyczne', header=None)
+    """
+    Wczytuje konfigurację z pliku Excel, ignorując nagłówki i bazując na pozycji kolumn.
+    Kolumna A -> 'key', Kolumna B -> 'value'.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"Plik konfiguracyjny nie został znaleziony: {path}")
 
-        config = {
-            "master_prompt_parts": master_prompt_df.rename(columns={0: 'Klucz', 1: 'Treść'}).to_dict('records'),
-            "case_study": case_study_df.rename(columns={0: 'Element', 1: 'Opis'}).to_dict('records'),
-            "campaigns": kampanie_df.groupby(0)[1].apply(list).to_dict()
-        }
-        print(f"Wczytywanie konfiguracji z pliku: {path}...")
+    print(f"Wczytywanie konfiguracji z pliku: {path}...")
+    config = {
+        "master_prompt_parts": {},
+        "case_study": {},
+        "campaigns": {}
+    }
+
+    try:
+        # Wczytywanie MasterPrompt
+        df_prompt = pd.read_excel(path, sheet_name='MasterPrompt', header=None)
+        df_prompt.columns = ['key', 'value']
+        config['master_prompt_parts'] = dict(zip(df_prompt['key'], df_prompt['value']))
+
+        # Wczytywanie CaseStudy
+        df_case = pd.read_excel(path, sheet_name='CaseStudy', header=None)
+        df_case.columns = ['key', 'value']
+        config['case_study'] = dict(zip(df_case['key'], df_case['value']))
+
+        # Wczytywanie Kampanii Tematycznych
+        df_campaigns = pd.read_excel(path, sheet_name='KampanieTematyczne', header=None)
+        df_campaigns.columns = ['campaign', 'inspiration']
+        
+        campaign_dict = {}
+        for _, row in df_campaigns.iterrows():
+            campaign_name = row['campaign']
+            inspiration = row['inspiration']
+            if pd.notna(campaign_name) and pd.notna(inspiration):
+                if campaign_name not in campaign_dict:
+                    campaign_dict[campaign_name] = []
+                campaign_dict[campaign_name].append(inspiration)
+        config['campaigns'] = campaign_dict
+        
         print("Konfiguracja wczytana pomyślnie.")
         return config
-    except FileNotFoundError:
-        print(f"Błąd: Plik konfiguracyjny {path} nie został znaleziony.")
-        return {}
+
     except Exception as e:
-        print(f"Błąd podczas wczytywania konfiguracji z Excela: {e}")
-        return {}
+        print(f"[BŁĄD KRYTYCZNY] Nie udało się wczytać danych z pliku Excel: {e}")
+        print("Upewnij się, że plik 'config.xlsx' istnieje i zawiera arkusze: 'MasterPrompt', 'CaseStudy', 'KampanieTematyczne'.")
+        raise
 
 # === KROK 3: Dynamiczne Budowanie Master Promptu ===
 def build_master_prompt(config: dict) -> str:
     """Dynamicznie buduje pełny tekst Master Promptu."""
-    prompt_parts = [part['Treść'] for part in config.get("master_prompt_parts", [])]
-    case_study_parts = [f"{row['Element']}: {row['Opis']}" for row in config.get("case_study", [])]
+    prompt_parts = [str(value) for value in config.get("master_prompt_parts", {}).values()]
+    case_study_parts = [f"{key}: {value}" for key, value in config.get("case_study", {}).items()]
     
     case_study_full = "\n".join(case_study_parts)
     
@@ -373,8 +398,10 @@ def commit_and_push_changes(repo_path: Path, commit_message: str):
 
 def main():
     """Główna funkcja sterująca skryptem."""
-    config = load_config_from_excel(CONFIG_FILE)
-    if not config:
+    try:
+        config = load_config_from_excel(CONFIG_FILE)
+    except Exception as e:
+        print(f"Zatrzymano skrypt z powodu błędu konfiguracji: {e}")
         return
 
     inspiration, campaign = pick_inspiration(config)
