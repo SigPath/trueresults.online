@@ -40,6 +40,7 @@
   }
   </script>
   <style>body{font-family:Inter,system-ui,sans-serif}</style>
+<meta name="article:category" content="{{KATEGORIA}}"/>
 </head>
 <body class="bg-background text-text">
   <!-- HEADER: odwzorowanie struktury jak na stronie głównej (logo + nawigacja). Względne ścieżki aby działało lokalnie i w podkatalogu. -->
@@ -58,6 +59,8 @@
       <p class="text-xs text-text/60">Opublikowano: <time datetime="{{DATA}}">{{DATA_LUDZKA}}</time></p>
       <hr class="my-6 border-border/60" />
       {{TRESC_HTML}}
+      {{FAQ_HTML}}
+      {{POWIAZANE_POSTY_HTML}}
     </article>
   </main>
   <footer class="border-t border-border/60 py-8 text-center text-xs text-text/60">&copy; <span id="year"></span> True Results Online</footer>

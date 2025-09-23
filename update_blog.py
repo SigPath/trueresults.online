@@ -257,76 +257,171 @@ def build_post_html(data: dict, date: dt.date, slug: str) -> str:
     try:
         template_str = TEMPLATE_FILE.read_text(encoding="utf-8")
     except FileNotFoundError:
-        template_str = """<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>{{TITLE}}</title>
-    <meta name="description" content="{{DESCRIPTION}}">
-    <link rel="canonical" href="{{CANONICAL_URL}}">
-</head>
-<body>
-    <h1>{{TITLE}}</h1>
-    <p>Opublikowano: {{DATE}}</p>
-    <div>{{HTML_CONTENT}}</div>
-    <section id="faq">{{FAQ_HTML}}</section>
-    <aside id="related">{{RELATED_POSTS_HTML}}</aside>
-</body>
-</html>"""
+        print(f"[BŁĄD KRYTYCZNY] Plik szablonu '{TEMPLATE_FILE}' nie został znaleziony. Nie można zbudować wpisu.")
+        # Zwraca absolutne minimum, aby uniknąć crashu, ale sygnalizuje problem
+        return f"<h1>{data['title']}</h1><p>Błąd: Brak szablonu.</p>"
 
     faq_html = ""
     if data.get('faq'):
-        faq_items = [f"<dt>{item['question']}</dt><dd>{item['answer']}</dd>" for item in data['faq']]
-        faq_html = f"<h2>FAQ</h2><dl>{''.join(faq_items)}</dl>"
+        faq_items_html = "".join([
+            f"""<div class="py-4">
+                    <dt class="font-semibold text-text">{item['question']}</dt>
+                    <dd class="mt-2 text-text/80">{item['answer']}</dd>
+                </div>"""
+            for item in data['faq']
+        ])
+        if faq_items_html:
+            faq_html = f"""<section class="mt-12 pt-8 border-t border-border/60 not-prose" id="faq">
+                <h2 class="text-xl font-semibold mb-4">Najczęściej zadawane pytania (FAQ)</h2>
+                <dl class="divide-y divide-border/60">{faq_items_html}</dl>
+            </section>"""
 
     related_html = ""
     if data.get('related'):
-        related_items = [f"<li><a href=\"../{p['slug']}.html\">{p['title']}</a></li>" for p in data['related']]
-        related_html = f"<h2>Warto przeczytać</h2><ul>{''.join(related_items)}</ul>"
+        related_items_html = "".join([
+            f"<li><a class='text-accent hover:underline text-sm' href='{p['slug']}.html'>{p['title']}</a></li>"
+            for p in data['related']
+        ])
+        if related_items_html:
+            related_html = f"""<section class='mt-12 not-prose' id='related'>
+                <h2 class='text-lg font-semibold mb-4'>Powiązane analizy</h2>
+                <ul class='space-y-2'>{related_items_html}</ul>
+            </section>"""
+
+    # Upewnij się, że wszystkie klucze istnieją, aby uniknąć błędów
+    title = data.get('title', 'Brak tytułu')
+    description = data.get('description', 'Brak opisu.')
+    html_content = data.get('html_content', '<p>Brak treści.</p>')
+    
+    # Pobranie kategorii z danych, jeśli istnieje
+    category = data.get('category', 'Artykuły') # Domyślna kategoria
 
     return (template_str
-            .replace("{{TYTUL}}", data['title'])
-            .replace("{{OPIS}}", data['description'])
+            .replace("{{TYTUL}}", title)
+            .replace("{{OPIS}}", description)
+            .replace("{{KATEGORIA}}", category)
             .replace("{{KANONICAL}}", f"{BASE_URL}/pages/{slug}.html")
             .replace("{{DATA}}", date.strftime("%Y-%m-%d"))
-            .replace("{{DATA_LUDZKA}}", date.strftime("%d %B %Y"))
-            .replace("{{TRESC_HTML}}", data['html_content'])
+            .replace("{{TRESC_HTML}}", html_content)
             .replace("{{FAQ_HTML}}", faq_html)
-            .replace("{{RELATED_POSTS_HTML}}", related_html)
+            .replace("{{POWIAZANE_POSTY_HTML}}", related_html)
     )
 
 def insert_card_in_index(slug: str, data: dict, date: dt.date, campaign_name: str) -> None:
-    """Wstawia nową kartę artykułu na stronę główną."""
+    """Wstawia nową kartę artykułu na stronę główną, używając profesjonalnego szablonu."""
     try:
         index_content = INDEX_FILE.read_text(encoding="utf-8")
         soup = BeautifulSoup(index_content, 'html.parser')
         
-        card_section = soup.find(id="auto-blog-section") # Zakładamy, że jest taki ID
-        if not card_section:
-            print("[OSTRZEŻENIE] Nie znaleziono sekcji #auto-blog-section w index.html")
+        posts_container = soup.find(id="posts-container")
+        if not posts_container:
+            print("[OSTRZEŻENIE] Nie znaleziono kontenera #posts-container w index.html. Wstawianie karty pominięte.")
             return
 
-        new_card = soup.new_tag("article", **{'class': 'post-card'})
-        new_card.append(BeautifulSoup(f"<h2><a href=\"pages/{slug}.html\">{data['title']}</a></h2>", 'html.parser'))
-        new_card.append(BeautifulSoup(f"<p class=\"meta\">{date.strftime('%Y-%m-%d')} &bull; {campaign_name}</p>", 'html.parser'))
-        new_card.append(BeautifulSoup(f"<p>{data['description']}</p>", 'html.parser'))
+        # Nowy, profesjonalny szablon karty
+        card_html = f"""
+<article class="flex flex-col gap-2 rounded-lg border border-border bg-surface shadow-lift transition-transform duration-300 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-accent/80">
+    <a href="pages/{slug}.html" class="block p-6" aria-label="Przeczytaj więcej o {data['title']}">
+        <h3 class="font-semibold text-base leading-snug tracking-tight text-text/90 hover:text-accent transition-colors">{data['title']}</h3>
+        <p class="mt-3 text-xs text-text/60">{date.strftime('%d %B %Y')} &bull; {campaign_name}</p>
+    </a>
+</article>
+"""
+        new_card_soup = BeautifulSoup(card_html, 'html.parser')
+        
+        # Wstaw nową kartę na początek kontenera
+        posts_container.insert(0, new_card_soup)
 
-        card_section.insert(0, new_card)
+        # Ogranicz liczbę kart do MAX_INDEX_CARDS
+        all_cards = posts_container.find_all("article", recursive=False)
+        if len(all_cards) > MAX_INDEX_CARDS:
+            for card in all_cards[MAX_INDEX_CARDS:]:
+                card.decompose()
 
-        # Ogranicz liczbę kart
-        all_cards = card_section.find_all("article", class_="post-card")
-        for card in all_cards[MAX_INDEX_CARDS:]:
-            card.decompose()
-
+        # Zapisz zmodyfikowany plik
         safe_write(INDEX_FILE, str(soup.prettify()))
+
     except Exception as e:
-        print(f"[BŁĄD] Nie udało się zaktualizować index.html: {e}")
+        print(f"[BŁĄD] Nie udało się zaktualizować pliku index.html: {e}")
+
 
 def generate_full_spis(posts: list[dict]) -> None:
-    """Generuje pełną listę wszystkich artykułów (spis.html)."""
-    items = [f"<li><a href=\"pages/{p['slug']}.html\">{p['title']}</a> ({p['date']})</li>" for p in posts]
-    html = f"<!DOCTYPE html><html lang=\"pl\">...<body><ul>{''.join(items)}</ul></body></html>" # Uproszczony
-    safe_write(SPIS_FILE, html)
+    """Generuje pełną, profesjonalnie wyglądającą stronę spisu treści (spis.html)."""
+    
+    post_items_html = []
+    for p in posts:
+        post_items_html.append(f"""
+<article class='border-b border-border/40 pb-6'>
+    <h2 class='text-lg font-semibold'>
+        <a class='hover:text-accent transition-colors' href='pages/{p['slug']}.html'>{p['title']}</a>
+    </h2>
+    <p class='mt-1 text-xs text-text/60'>{p['date']}</p>
+    <p class='mt-2 text-sm text-text/80 leading-relaxed'>{p['description']}</p>
+</article>
+""")
+
+    spis_html = f"""<!DOCTYPE html>
+<html lang='pl'>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spis Treści – {SITE_NAME}</title>
+    <meta name="description" content="Pełne archiwum wszystkich analiz opublikowanych w serwisie {SITE_NAME}." />
+    <link rel="canonical" href="{BASE_URL}/spis.html" />
+    <link href="/favicon.svg" rel="icon" type="image/svg+xml"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+        tailwind.config = {{
+          theme: {{
+            extend: {{
+              colors: {{
+                background: '#0d1117',
+                surface: '#161b22',
+                border: '#30363d',
+                accent: '#58a6ff',
+                text: '#c9d1d9'
+              }},
+              fontFamily: {{
+                sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+              }}
+            }}
+          }}
+        }}
+    </script>
+    <style>
+        body {{ font-family: 'Inter', system-ui, sans-serif; }}
+        :focus-visible {{ outline: 2px solid #58a6ff; outline-offset: 2px; }}
+    </style>
+</head>
+<body class="bg-background text-text antialiased">
+    <header class="border-b border-border/60 backdrop-blur supports-[backdrop-filter]:bg-background/70 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+            <a aria-label="Strona główna {SITE_NAME}" class="font-semibold tracking-tight text-lg hover:text-accent transition-colors" href="index.html">TrueResults<span class="text-accent">.online</span></a>
+            <nav aria-label="Main navigation" class="flex items-center gap-6 text-sm">
+                <a class="hover:text-accent transition-colors" href="index.html#about">O projekcie</a>
+                <a class="hover:text-accent transition-colors" href='spis.html'>Spis Treści</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <section class='pt-20 pb-16 md:pt-24 md:pb-20'>
+            <div class='max-w-4xl mx-auto px-4 sm:px-6'>
+                <h1 class='text-3xl md:text-4xl font-bold tracking-tight mb-10'>Spis Treści</h1>
+                <div class='space-y-8'>
+                    {''.join(post_items_html)}
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer class="border-t border-border/60 py-8 text-sm text-text/60">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+            <p>© <span id="year">{dt.date.today().year}</span> {SITE_NAME}. Wszelkie prawa zastrzeżone.</p>
+        </div>
+    </footer>
+</body>
+</html>"""
+    safe_write(SPIS_FILE, spis_html)
 
 def generate_sitemap(posts: list[dict]) -> None:
     """Generuje plik sitemap.xml."""
