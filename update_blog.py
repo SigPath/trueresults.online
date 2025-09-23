@@ -30,6 +30,7 @@ Bezpieczeństwo:
 from __future__ import annotations
 
 import os
+import time  # (v4.0) retry delay
 import datetime as dt
 import random
 import re
@@ -621,20 +622,13 @@ def enforce_word_limit(html_content: str, max_words: int = 300) -> str:
 
 
 def generate_full_article_from_master_prompt(topic: str) -> dict:
-    """NOWA FUNKCJA GŁÓWNA: Generuje pełny artykuł ZAWSZE używając MASTER PROMPT jeśli dostępny.
+    """(v4.0) Główna funkcja generująca: MASTER PROMPT + retry + fallback.
 
-    Zwraca dict(title, description, html_content, mode, faq) w formacie zgodnym z poprzednim fetch_ai_article.
-
-    Zasady:
-    - Jeśli master_prompt jest None lub USE_MASTER_PROMPT!=1 -> fallback do logicznie skróconego wariantu dawnego fetch_ai_article.
-    - Jeśli jest master_prompt: doklej instrukcję formatu rozszerzonego (9 sekcji), długości (ART_MIN/MAX) i temat.
-    - ZACHOWUJEMY unifikację: build_post_html spodziewa się dict o identycznych kluczach.
-    - Minimalne ryzyko: nie usuwamy jeszcze fetch_ai_article (oznaczamy jako deprecated) do czasu pełnej migracji create_post.
+    Zwraca dict(title, description, html_content, mode, faq).
+    Retry: 2 próby (pierwsza + 1 powtórka) przy błędzie wywołania API, następnie fallback.
     """
     description_limit = 155
-    # Ładuj master prompt wewnątrz (centralizacja)
     master_prompt = load_master_prompt()
-    # Konfiguracja długości
     try:
         target_min = int(os.getenv("ART_MIN_WORDS", "650"))
     except ValueError:
@@ -645,7 +639,6 @@ def generate_full_article_from_master_prompt(topic: str) -> dict:
         target_max = 900
     if target_max < target_min:
         target_max = target_min + 100
-
     extended_structure_instr = f"""
 STRUKTURA (HTML):
 <h2>Wprowadzenie</h2> 1–3 akapity <p>
@@ -660,34 +653,41 @@ STRUKTURA (HTML):
 Każda sekcja zawiera 1–4 akapity <p>. Bez list, tabel, obrazów. Zero wstępów typu "Oto artykuł".
 Docelowa długość: {target_min}–{target_max} słów (twarde maksimum {int(target_max*1.05)}). Unikaj powtórzeń tytułu i lania wody.
 """.strip()
-
     use_master = master_prompt is not None and os.getenv("USE_MASTER_PROMPT", "0") == "1"
     mode = "master" if use_master else "fallback"
     body_html = ""
     if use_master and GEMINI_API_KEY != "WPROWADZ_KLUCZ_LOKALNIE":
-        try:
-            import google.generativeai as gen  # type: ignore
-            gen.configure(api_key=GEMINI_API_KEY)
-            model_name = os.getenv("GEMINI_MODEL_ARTICLE", "gemini-1.5-flash-latest")
-            model = gen.GenerativeModel(model_name)
-            print("Wysyłanie zapytania do Gemini z pełnym kontekstem...")
-            prompt = (
-                master_prompt
-                + "\n---\nAKTUALNY TEMAT: " + topic
-                + "\nInstrukcja dodatkowa: Napisz rozbudowany, głęboki artykuł analityczny w języku polskim, styl: precyzyjny, oparty na procesach psychologicznych i dynamice relacyjnej."
-                + "\n" + extended_structure_instr
-                + "\nZwróć WYŁĄCZNIE czysty HTML sekcji (h2 + p). Bez nagłówka tytułowego h1. Bez meta komentarzy.\n---\nGENERUJ:" 
-            )
-            response = model.generate_content(prompt)
-            raw_text = response.text if hasattr(response, "text") else "".join(p.text for p in response.parts)  # type: ignore
-            raw_text = sanitize_generated_text(raw_text)
-            body_html = ensure_paragraphs(raw_text)
-        except Exception as e:  # pragma: no cover
-            print(f"[MASTER_GEN] Błąd generowania przez master prompt: {e}")
+        # Retry loop (2 attempts)
+        for attempt in range(2):
+            try:
+                import google.generativeai as gen  # type: ignore
+                gen.configure(api_key=GEMINI_API_KEY)
+                model_name = os.getenv("GEMINI_MODEL_ARTICLE", "gemini-1.5-flash-latest")
+                model = gen.GenerativeModel(model_name)
+                print("Wysyłanie zapytania do Gemini z pełnym kontekstem... (próba", attempt + 1, ")")
+                prompt = (
+                    master_prompt
+                    + "\n---\nAKTUALNY TEMAT: " + topic
+                    + "\nInstrukcja dodatkowa: Napisz rozbudowany, głęboki artykuł analityczny w języku polskim, styl: precyzyjny, oparty na procesach psychologicznych i dynamice relacyjnej."
+                    + "\n" + extended_structure_instr
+                    + "\nZwróć WYŁĄCZNIE czysty HTML sekcji (h2 + p). Bez nagłówka tytułowego h1. Bez meta komentarzy.\n---\nGENERUJ:"
+                )
+                response = model.generate_content(prompt)
+                raw_text = response.text if hasattr(response, "text") else "".join(p.text for p in response.parts)  # type: ignore
+                raw_text = sanitize_generated_text(raw_text)
+                body_html = ensure_paragraphs(raw_text)
+                if body_html.strip():
+                    break  # success
+            except Exception as e:  # pragma: no cover
+                if attempt == 0:
+                    print(f"[MASTER_GEN] Błąd próba 1: {e} -> ponawiam za 20s")
+                    time.sleep(20)
+                else:
+                    print(f"[MASTER_GEN] Błąd próba 2: {e} -> fallback")
+        if not body_html:
             use_master = False
             mode = "fallback"
     if not body_html:
-        # Fallback – wykorzystujemy krótszy wariant oparty na dawnym fetch_ai_article (sekcje skrócone)
         paragraphs = [
             f"<h2>Wprowadzenie</h2><p><strong>Rdzeń zagadnienia:</strong> {topic} – syntetyczne wprowadzenie wyjaśniające dlaczego temat ma znaczenie w analizie relacyjno-psychologicznej.</p>",
             "<h2>Definicja i Kontekst</h2><p>Operacyjne zdefiniowanie zjawiska oraz wskazanie ram teoretycznych relewantnych do zagadnienia.</p>",
@@ -700,11 +700,8 @@ Docelowa długość: {target_min}–{target_max} słów (twarde maksimum {int(ta
             "<h2>Synteza i Pytania</h2><p>Podsumowanie napięcia kluczowego + 2–3 pytania: Co weryfikuję faktami? Jakie wzorce powtarzam? Jakie sygnały ignoruję?</p>",
         ]
         body_html = "\n".join(paragraphs)
-
-    # Meta description (pierwsze zdania)
     import re as _re
-    plain = _re.sub(r"<[^>]+>", " ", body_html)
-    plain = plain.replace("`", "")
+    plain = _re.sub(r"<[^>]+>", " ", body_html).replace("`", "")
     description = (plain.strip()[:description_limit]).rstrip()
     if len(plain) > description_limit:
         description += "…"
@@ -712,13 +709,7 @@ Docelowa długość: {target_min}–{target_max} słów (twarde maksimum {int(ta
     description = generate_meta_description(description)
     plain_full = extract_plain(body_html)
     faq = generate_faq(unique_title, plain_full)
-    return {
-        "title": unique_title,
-        "description": description,
-        "html_content": body_html,
-        "mode": mode,
-        "faq": faq,
-    }
+    return {"title": unique_title, "description": description, "html_content": body_html, "mode": mode, "faq": faq}
 
 
 # === KROK 2: Funkcje do generowania obrazów za pomocą Google AI ===
@@ -825,107 +816,6 @@ def generate_and_save_image_with_imagen(image_prompt: str, slug: str) -> str | N
         return None
 
 
-def fetch_ai_article(topic: str) -> dict:
-    """[DEPRECATED] Stara funkcja generowania artykułu – pozostawiona tymczasowo dla kompatybilności.
-
-    UWAGA: Docelowo zostanie usunięta po pełnej migracji do generate_full_article_from_master_prompt.
-    Wywołania nowych wpisów powinny korzystać z generate_full_article_from_master_prompt().
-
-    Generuje treść artykułu (rozszerzona wersja) poprzez API Gemini lub fallback.
-
-    Nowości (wersja rozszerzona):
-    - Konfigurowalna docelowa długość (ART_MIN_WORDS / ART_MAX_WORDS – domyślnie 650–900 słów)
-    - Struktura wielosekcyjna z wyraźnymi nagłówkami śródtytułów (h2) + akapity <p>
-    - Sekcje: Wprowadzenie, Definicja/Kontekst, Mechanizmy, Mikrodynamika / Wzorce, Studium Przypadku (syntetyczne), Konsekwencje / Ryzyka, Interwencje / Strategie, Perspektywa Długoterminowa, Synteza + Pytania Refleksyjne.
-    - Każda sekcja generowana jako czysty HTML (bez list ul/ol – unikamy zbyt dużej wariancji, można dodać później)
-    - Fallback nadal daje krótszą wersję (aby nie wstrzymywać procesu bez API) – ale lekko wydłużoną (8 akapitów).
-
-    Zwraca: dict(title, description, html_content, mode, faq?)
-    """
-    description_limit = 155
-    # Konfiguracja długości przez zmienne środowiskowe
-    try:
-        target_min = int(os.getenv("ART_MIN_WORDS", "650"))
-    except ValueError:
-        target_min = 650
-    try:
-        target_max = int(os.getenv("ART_MAX_WORDS", "900"))
-    except ValueError:
-        target_max = 900
-    if target_max < target_min:
-        target_max = target_min + 100
-
-    # Główny prompt – staramy się wymusić długość i strukturę
-    base_prompt = f"""
-Napisz analityczny, głęboki artykuł po polsku na temat: "{topic}".
-WYMAGANIA:
-- Długość docelowa: {target_min}–{target_max} słów (nie mniej niż {int(target_min*0.9)} i nie więcej niż {int(target_max*1.05)}).
-- Styl: precyzyjny, oparty na psychologii / analizie systemowej, unikaj lania wody i ogólników.
-- NIE twórz treści porad prawnych ani medycznych – zachowaj charakter edukacyjno-analityczny.
-- Unikaj sztucznego powtarzania tytułu i clickbaitowych sformułowań.
-STRUKTURA (każdy nagłówek jako <h2>, treść sekcji w akapitach <p>):
-1. Wprowadzenie – problem i dlaczego jest istotny.
-2. Definicja i Kontekst – osadzenie pojęć, ramy psychologiczne.
-3. Mechanizmy Psychologiczne – kluczowe procesy, wewnętrzne dynamiki.
-4. Mikrodynamika / Wzorce Zachowań – obserwowalne sygnały, mikrointerakcje.
-5. Studium Przypadku (syntetyczne) – krótka, modelowa ilustracja mechanizmu (anonimowa, neutralna).
-6. Konsekwencje i Ryzyka – skutki dla jednostki i relacji.
-7. Interwencje / Strategie – realistyczne kierunki pracy / autorefleksji (bez tanich porad typu "po prostu bądź szczery").
-8. Perspektywa Długoterminowa – trajektorie rozwoju / regresu.
-9. Synteza + 2–3 pytania refleksyjne – bez powtarzania całych zdań z wcześniejszych sekcji.
-FORMAT:
-- Zwróć wyłącznie czyste HTML: sekwencja <h2> + 1..4 akapitów <p> pod każdym nagłówkiem.
-- Nie używaj list, tabel ani obrazków.
-- Bez wstępu typu "Oto artykuł" – od razu treść.
-""".strip()
-
-    mode = "gemini"
-    try:
-        if GEMINI_API_KEY == "WPROWADZ_KLUCZ_LOKALNIE":
-            raise RuntimeError("Brak prawidłowego klucza – fallback.")
-        import google.generativeai as gen  # type: ignore
-        gen.configure(api_key=GEMINI_API_KEY)
-        model = gen.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(base_prompt)
-        raw_text = response.text if hasattr(response, 'text') else "".join(p.text for p in response.parts)  # type: ignore
-        raw_text = sanitize_generated_text(raw_text)
-        # Upewnij się, że mamy <p> – jeśli model zwrócił plaintext z nagłówkami
-        body_html = ensure_paragraphs(raw_text)
-    except Exception:
-        # Fallback – dłuższa wersja niż poprzednio, ale nadal deterministyczna
-        mode = "fallback"
-        paragraphs = [
-            f"<h2>Wprowadzenie</h2><p><strong>Rdzeń zagadnienia:</strong> {topic} – syntetyczne wprowadzenie wyjaśniające dlaczego temat ma znaczenie w analizie relacyjno-psychologicznej.</p>",
-            "<h2>Definicja i Kontekst</h2><p>Operacyjne zdefiniowanie zjawiska oraz wskazanie ram teoretycznych (psychologia poznawcza, systemowa, teorii przywiązania – zależnie od relewancji).</p>",
-            "<h2>Mechanizmy Psychologiczne</h2><p>Opis wewnętrznych sprzężeń: regulacja emocji, dysonans poznawczy, racjonalizacja, projekcja, segmentacja tożsamości – przykłady mechanizmów zależnych od tematu.</p>",
-            "<h2>Mikrodynamika / Wzorce</h2><p>Konkrety: powtarzalne frazy, zmiany rytmu odpowiedzi, eskalacja/wycofanie, taktyczne użycie ciszy, przerzucanie ciężaru dowodu.</p>",
-            "<h2>Studium Przypadku</h2><p>Zsyntetyzowany modelowy scenariusz ilustrujący dynamikę – pozbawiony danych osobowych, służący wyłącznie ilustracji funkcji mechanizmu.</p>",
-            "<h2>Konsekwencje i Ryzyka</h2><p>Skutki krótkoterminowe (dezorientacja, fragmentacja narracji) oraz długoterminowe (erozja zaufania, przebudowa modelu relacyjnego, osłabienie wglądu).</p>",
-            "<h2>Interwencje / Strategie</h2><p>Priorytety: rekonstrukcja faktów, identyfikacja wzorców, wzmacnianie granic, higiena informacyjna, praca nad tolerancją dysonansu.</p>",
-            "<h2>Perspektywa Długoterminowa</h2><p>Potencjalne trajektorie: adaptacyjne integrowanie doświadczenia vs. utrwalanie defensywnych narracji i dalsza dysocjacja odpowiedzialności.</p>",
-            "<h2>Synteza i Pytania</h2><p>Podsumowanie kluczowego wektora napięcia + pytania: Co faktycznie wiem a co zakładam? Jakie sygnały ignorowałem? Które interpretacje opierają się na danych, a które na potrzebie domknięcia?</p>",
-        ]
-        body_html = "\n".join(paragraphs)
-
-    # Meta description – pierwsze zdania z treści (strip tagów)
-    import re as _re
-    plain = _re.sub(r"<[^>]+>", " ", body_html)
-    plain = plain.replace("`", "")
-    description = (plain.strip()[:description_limit]).rstrip()
-    if len(plain) > description_limit:
-        description += "…"
-
-    unique_title = ensure_unique_title(topic)
-    description = generate_meta_description(description)
-    plain_full = extract_plain(body_html)
-    faq = generate_faq(unique_title, plain_full)
-    return {
-        "title": unique_title,
-        "description": description,
-        "html_content": body_html,
-        "mode": mode,
-        "faq": faq,
-    }
 
 
 def build_post_html(data: dict, date: dt.date, slug: str) -> str:
@@ -2325,8 +2215,15 @@ def main():
     finally:
         # Uwaga: campaign_name może nie istnieć jeśli błąd nastąpił przed create_post
         campaign_for_log = locals().get("campaign_name", "?")
+        # (v4.0) Metryka liczby słów
+        html_c = data.get('html_content', '') if isinstance(data, dict) else ''
+        try:
+            plain_c = extract_plain(html_c) if html_c else ''
+        except Exception:
+            plain_c = ''
+        word_count = len(plain_c.split()) if plain_c else 0
         log_entry = (
-            f"DATA={dt.datetime.now().isoformat()} | KAMPANIA={campaign_for_log} | TRYB={data.get('mode')} | TEMAT={topic} | SLUG={slug} | TYTUL={data.get('title')}"
+            f"DATA={dt.datetime.now().isoformat()} | KAMPANIA={campaign_for_log} | TRYB={data.get('mode')} | TEMAT={topic} | SLUG={slug} | TYTUL={data.get('title')} | SŁOWA={word_count}"
         )
         if error:
             log_entry += f" | ERROR={error}"

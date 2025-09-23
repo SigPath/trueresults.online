@@ -1,166 +1,176 @@
-# Projekt „Niekończące się Lustro” (True Results Online) – Wersja 2.0
+﻿# Projekt "Niekończące się Lustro" – Wersja 4.0 (Niezawodność + Czystość Kodu)
 
-System automatycznego, analitycznego bloga psychologicznego z dzienną publikacją poprzez GitHub Actions oraz DZIENNĄ rotacją Kampanii Tematycznych.
-
----
-
-## 🎯 Cel Projektu
-Stworzenie regularnie aktualizowanego repozytorium obserwacyjno-analitycznego dynamik relacyjnych i poznawczych. Każdy wpis stanowi modułowy artefakt: spójny język, stały format, ograniczona długość (≈250–300 słów), klarowna struktura akapitów oraz nacisk na mikro‑mechanizmy psychologiczne. Wersja 2.0 dodaje logikę rotacyjnych „kampanii” – zamiast chaotycznej losowości, tematy układają się w tygodniowe skupienia poznawcze.
+> Wersja 3.0 wprowadziła pełną integrację Master Promptu. Wersja 4.0 koncentruje się na odporności (retry przy błędach API), redukcji długu technicznego (usunięcie legacy funkcji) oraz lepszej obserwowalności (metryka liczby słów w logu).
 
 ---
 
-## 🧠 Kampanie Tematyczne (Core Upgrade)
-Mechanizm „Kampanii” zapewnia, że KAŻDEGO DNIA wybierana jest inna kategoria semantyczna (mapowanie: dzień roku 1–366 modulo liczba kategorii). Eliminuje to tygodniową monotonię i zwiększa percepcyjną różnorodność.
-
-### Zalety tej architektury
-- Spójność percepcyjna: czytelnik odbiera serię jako logiczny blok.
-- Lepsze nasycenie słów kluczowych (SEO tematyczne).
-- Umożliwia późniejsze generowanie raportów „kampania → agregat wniosków”.
-- Minimalny narzut – algorytm selekcji kontroluje wyłącznie warstwę wyboru tematu.
-
-### Jak to działa pod spodem
-1. Zdefiniowany słownik `CAMPAIGN_TOPICS`: klucz = kategoria, wartość = lista tematów.
-2. Funkcja `get_current_campaign()` pobiera numer dnia roku (`date.strftime('%j')`) i wykonuje modulo po liczbie kategorii.
-3. Funkcja `pick_topic()` filtruje wykorzystane tematy danej kategorii (format zapisów: `KATEGORIA|TEMAT` w `used_topics.txt`).
-4. Gdy wszystkie tematy w kategorii zostały zużyte – reset następuje tylko dla tej kategorii (inne kategorie zachowują historię zużycia).
-5. Można wymusić kampanię: `FORCE_CAMPAIGN="Mechanizmy Obronne i Taktyki Manipulacji"`.
-6. (Wyłączono) Dawny baner informacyjny kampanii na stronie głównej – usunięty na życzenie (możliwy powrót przez odkomentowanie kodu).
+## 🧭 Roadmap / Historia Ewolucji
+| Wersja | Zakres | Kluczowe Zmiany |
+|--------|--------|-----------------|
+| 1.x | Inicjalna automatyzacja | Prosty generator + zapis HTML + push |
+| 2.x | Kampanie tematyczne | Rotacja kategorii (dzień roku), unikalność tematów, limit kart 21 |
+| 3.x | Master Prompt | Centralizacja generacji (1 funkcja), struktura 9 sekcji, fallback kontrolowany, log trybu (master/fallback) |
+| 4.0 | Niezawodność + Cleanup | Retry (1 powtórka po błędzie), usunięcie `fetch_ai_article`, metryka SŁOWA=, klarowny README + instrukcje dla Copilota |
 
 ---
 
-## 🗂 Struktura Repozytorium (Kluczowe Elementy)
+## 🎯 Cel Wersji 4.0
+1. Zminimalizować ryzyko utraty publikacji przez chwilowe błędy API (limit 429 lub przejściowa niestabilność).
+2. Usunąć martwy kod (`fetch_ai_article`) aby uprościć mentalny model i uniknąć divergence.
+3. Dodać metrykę liczby słów do logu aby monitorować potencjalne skrócenia odpowiedzi modelu.
+4. Zachować w 100% zgodność istniejących struktur wyjściowych (brak zmian w HTML pliku wpisu, brak zmian w strukturze dict zwracanej przez generator).
+
+---
+
+## ✅ Ostateczna Lista Zadań (TODO – Wdrożenie 4.0)
+- [ ] 1. Retry w `generate_full_article_from_master_prompt` (maks. 2 próby: pierwsza + jedna powtórka po 20 s)
+- [ ] 2. Usunięcie definicji `fetch_ai_article` (legacy, deprecated)
+- [ ] 3. Dodanie metryki liczby słów (`SŁOWA=<int>`) do `logs/last_run.txt`
+- [ ] 4. Test lokalny (scenariusz sukces + ewentualna symulacja wyjątku)
+- [ ] 5. Commit + push (wiadomość prefiks: `[auto] v4.0` lub zgodny z istniejącym wzorcem)
+
+Opcjonalne dalsze rozszerzenia (nie w scope 4.0, ale możliwe bez kolizji):
+- (A) Automatyczny backoff wykładniczy dla >1 powtórki (obecnie trzymamy prostotę)
+- (B) Flaga środowiskowa `RETRY_DELAY_SECONDS` (domyślnie 20)
+- (C) Oznaczanie trybu i word_count w JSON-LD (pole niestandardowe `articleBodyWordCount`)
+- (D) Telemetria do osobnego pliku CSV (`logs/metrics.csv`)
+
+---
+
+## � Instrukcje dla GitHub Copilot / Wstawiane Komentarze w `update_blog.py`
+Poniższe bloki komentarzy (KROK 1–3) służą jako sterujące instrukcje dla Copilota – po wklejeniu nadpisują istniejący kod lub sekcje.
+
+### (KROK 1) – Retry (ZASTĄP treść funkcji `generate_full_article_from_master_prompt`)
+```python
+# === KROK 1: Implementacja mechanizmu RETRY w głównej funkcji generującej ===
+# TODO Copilot: Przepisz poniższą funkcję `generate_full_article_from_master_prompt`, dodając do niej mechanizm ponawiania.
+# Wymagania:
+# 1. Maksymalnie 2 próby (pierwsza + jedna powtórka) – pętla for lub while.
+# 2. Retry tylko jeśli poprzednia próba zakończyła się wyjątkiem.
+# 3. Obsłuż wyjątek ogólny `Exception as e` – jeśli to nie ostatnia próba: print("Błąd API, ponawiam próbę za 20 sekund...", e)
+# 4. time.sleep(20) przed drugą próbą (dodaj `import time` na górze pliku jeśli brak).
+# 5. Log zachowujemy: "Wysyłanie zapytania do Gemini z pełnym kontekstem..." TYLKO przed realnym requestem.
+# 6. Przy sukcesie: przerwij pętlę i kontynuuj dalszą część funkcji bez zmian logicznych.
+# 7. Jeśli obie próby zawiodą: przełącz na fallback (tak jak obecnie) – NIE przerywaj całego procesu.
+# 8. Reszta pipeline (meta description, ensure_unique_title, FAQ) – bez zmian.
+# 9. Nie duplikuj kodu fallback – wykorzystaj istniejącą gałąź.
+def generate_full_article_from_master_prompt(topic: str) -> dict:
+	# ... (aktualna treść funkcji do refaktoryzacji z dodanym mechanizmem retry) ...
 ```
-index.html           # Strona główna – 21 najnowszych wpisów (paginacja włączona)
-spis.html            # Generowany pełny spis treści
-pages/*.html         # Wygenerowane wpisy (slug + data)
-update_blog.py       # Główny skrypt automatyzacji
-prompts/master_prompt.py  # (Opcjonalny) bazowy mega‑prompt
-prompts/case_study.txt    # Studium przypadku wstrzykiwane do master promptu
-feed.xml             # RSS 2.0 (ostatnie wpisy)
-sitemap.xml          # Mapa strony dla indeksacji
-logs/last_run.txt    # Logi operacyjne (tryb, kampania, temat, slug, błędy)
-README_AUTOBLOG.md   # Dokumentacja operacyjno‑techniczna
-README.md            # Ten plik – warstwa koncepcyjno‑architektoniczna
+
+### (KROK 2) – Usunięcie funkcji legacy (ZASTĄP definicję `fetch_ai_article` komentarzem)
+```python
+# === KROK 2: Usunięcie zbędnego kodu (Code Cleanup) ===
+# TODO Copilot: Usuń całkowicie funkcję `fetch_ai_article` (deprecated). Nie pozostawiaj pustego bloku.
+# Upewnij się, że w kodzie nie ma żadnych wywołań do niej – w wersji 3.x create_post używa tylko generate_full_article_from_master_prompt.
 ```
 
----
-
-## 🔄 Przepływ Dzienny (Pipeline)
-1. GitHub Actions uruchamia `update_blog.py`.
-2. `get_current_campaign()` → wybór kategorii.
-3. `pick_topic()` → losowy temat z dostępnej puli kampanii.
-4. `fetch_ai_article()` / `generate_article()` (Gemini Flash 1.5) → surowa treść.
-5. Sanitizacja, ograniczenie słów, zachowanie <p> i <strong>.
-6. Render szablonu (`szablon_wpisu.html`) → zapis do `pages/`.
-7. Aktualizacja `index.html` (prepend karty, utrzymanie limitu 21) + opcjonalny baner.
-8. Regeneracja: paginacja (`page2.html`+), RSS, sitemap, spis (`spis.html`).
-9. Selektywny commit (tylko nowe / zmienione rozmiarem pliki) → push.
-10. Log zapisuje: DATA | KAMPANIA | TRYB | TEMAT | SLUG | TYTUL.
-
----
-
-## 🧩 Kontrakt Treści (Specyfikacja Wpisu)
-- Długość docelowa: 250–300 słów (twarde przycięcie > limitu).
-- Struktura: 5 akapitów w tagach `<p>` (definicja / mechanizm / dynamika / interwencje / synteza).
-- Styl: analityczny, bez „waty”, brak list, brak nagłówków wewnętrznych.
-- Wyróżnienia: kluczowe frazy w `<strong>` (model instruowany w promptach).
-- Meta: opis ≈ 155 znaków (SEO snippet), kanoniczny URL, datePublished.
-
----
-
-## 🔐 Bezpieczeństwo i Sekrety
-- Klucz Gemini: `GEMINI_API_KEY` w `.env` lokalnie / jako GitHub Secret w Actions.
-- `.env` jest ignorowany (`.gitignore`).
-- Brak zapisu sekretów w logach.
-- Fallback treści jeśli brak klucza – deterministyczne akapity.
-
----
-
-## ⚙️ Zmienne Środowiskowe (Wybrane)
-| Zmienna | Opis |
-|---------|------|
-| `GEMINI_API_KEY` | Klucz do API Gemini |
-| `GEMINI_MODEL` | Model podstawowy (domyślnie `gemini-1.5-flash`) |
-| `USE_MASTER_PROMPT=1` | Włącza scalanie `master_prompt.py` + `case_study.txt` |
-| `FORCE_CAMPAIGN` | Wymusza konkretną kampanię (nazwa klucza) |
-| `SHOW_CAMPAIGN_BANNER=1` | Wyświetla baner aktualnej kampanii w `index.html` |
-| `REBUILD_ALL_PAGES=1` | Rekonstrukcja listy kart z istniejących plików |
-| (kod) `PAGINATION_ENABLED` | Globalne włączenie/wyłączenie paginacji (obecnie: True) |
-| (kod) `MAX_CARDS` | Liczba wpisów na stronę (21) |
-
----
-
-## 🧪 Testowanie Lokalnie
-```
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-GEMINI_API_KEY=TWÓJ_KLUCZ python update_blog.py
-```
-Wymuszenie kampanii + banera (np. dla demo):
-```
-FORCE_CAMPAIGN="Mechanizmy Obronne i Taktyki Manipulacji" SHOW_CAMPAIGN_BANNER=1 python update_blog.py
-```
-Pełna odbudowa kart (bez tworzenia nowego wpisu):
-```
-REBUILD_ALL_PAGES=1 python update_blog.py
+### (KROK 3) – Metryka liczby słów (MODYFIKUJ blok finally w main())
+```python
+# === KROK 3: Rozszerzenie logowania o liczbę słów ===
+# TODO Copilot: W bloku `finally` funkcji main():
+# 1. Pobierz HTML z data.get('html_content','').
+# 2. Użyj istniejącej funkcji extract_plain(html) lub prostego regexu – preferuj extract_plain.
+# 3. word_count = len(plain.split()) jeśli plain != ''.
+# 4. Dodaj na końcu log_entry: ` | SŁOWA={word_count}`.
+# 5. Zachowaj dotychczasowe pola i strukturę.
 ```
 
 ---
 
-## 📁 Plik `used_topics.txt`
-Format linii: `KATEGORIA|TEMAT`. Reset następuje selektywnie – tylko gdy dana kategoria wyczerpie swoją pulę.
+## 🔍 Kryteria Akceptacji (Definition of Done)
+| ID | Kryterium | Spełnienie |
+|----|-----------|------------|
+| 1 | Dwukrotna próba requestu (1 retry) | Request ponawiany po 20 s tylko po błędzie | 
+| 2 | Usunięcie `fetch_ai_article` | Brak definicji i brak referencji | 
+| 3 | Log ma suffix `| SŁOWA=NNN` | Widoczny w `logs/last_run.txt` | 
+| 4 | Brak regresji publikacji | Nowy wpis generuje się poprawnie (fallback lub master) | 
+| 5 | Brak nowych ostrzeżeń błędów lintera/importów | Pylance / runtime OK | 
 
-Przykład fragmentu:
+---
+
+## 🧪 Test Plan (Manualny Minimalny)
+1. Normalny bieg (z poprawnym kluczem) – sprawdź log trybu = master, obecność SŁOWA.
+2. Symulacja błędu: tymczasowo wymuś wyjątek (np. ustaw GEMINI_API_KEY na nieprawidłowy) → powinna zajść ścieżka fallback + SŁOWA.
+3. Sprawdź czy brak definicji `fetch_ai_article` nie powoduje NameError (brak wywołań).
+4. Powtórne uruchomienie – log dokleja nową linię (idempotencja struktury).
+
+---
+
+## 🗂 Struktura Repo (skrót)
 ```
-Psychologia Sprawcy|Lęk przed Samotnością jako Główny Motor Destrukcyjnych Działań
-Psychologia Sprawcy|Rola Peruki i Fałszywych Tożsamości w Kontekście Niestabilnego Poczucia Własnej Wartości
+index.html
+spis.html
+pages/*.html
+update_blog.py
+prompts/master_prompt.py
+prompts/case_study.txt
+run_autoblog.py / run_autoblog.sh
+logs/last_run.txt
 ```
 
 ---
 
-## 📡 Generowane Artefakty
-- `feed.xml` – RSS (ostatnie ~30 wpisów)
-- `sitemap.xml` – sitemap (root, spis, wpisy)
-- `spis.html` – kompletny indeks wpisów
-- Log wejściowy (meta) – audyt przebiegu
+## 🔐 Bezpieczeństwo (unchanged)
+- `.env` ignorowany – klucz w `GEMINI_API_KEY`.
+- Brak logowania surowych odpowiedzi modelu.
+- Fallback deterministyczny zapewnia ciągłość publikacji.
 
 ---
 
-## 🧱 Architektura Kodowa (Wybrane Funkcje)
+## ⚙️ Najważniejsze Zmienne Środowiskowe (Aktualne)
+| Zmienna | Opis | Domyślna |
+|---------|------|----------|
+| GEMINI_API_KEY | Klucz do API Gemini | (brak) |
+| USE_MASTER_PROMPT | Włącza master prompt | 1 / 0 |
+| ART_MIN_WORDS / ART_MAX_WORDS | Docelowy zakres długości | 650 / 900 |
+| GIT_COMMIT_PREFIX | Prefiks commitów | [auto] |
+| GIT_PUSH | Czy wypychać na origin | 1 |
+
+---
+
+## 🧱 Kluczowe Funkcje (po 4.0)
 | Funkcja | Rola |
 |---------|------|
-| `get_current_campaign()` | Wyznacza aktywną kampanię na podstawie tygodnia lub wymuszenia |
-| `pick_topic()` | Losuje temat w ramach kampanii, zapisuje zużycie |
-| `generate_article()` | Orkiestruje prompt + model + sanitizację |
-| `insert_card_in_index()` | Wstrzyknięcie karty wpisu + opcjonalny baner |
-| `generate_rss_feed()` | Budowa RSS 2.0 |
-| `generate_sitemap()` | Budowa sitemap.xml |
-| `generate_full_spis()` | Regeneracja pełnego spisu treści |
-| `git_commit_and_push()` | Selektywny commit (nowe / zmienione rozmiarem) |
+| load_master_prompt | Ładuje złożony kontekst master promptu |
+| generate_full_article_from_master_prompt | Jedyna ścieżka generacji treści (retry + fallback) |
+| pick_topic | Globalnie unikatowy wybór tematu w ramach kampanii |
+| build_post_html | Budowa finalnego HTML wpisu ze szablonu |
+| insert_card_in_index | Wstawienie karty + przycinanie do 21 wpisów |
+| generate_rss_feed / generate_sitemap | Indeksacja / syndykacja |
+| git_commit_and_push | Commit + push (deterministyczny) |
 
 ---
 
-## 🚀 Możliwe Kierunki 3.0
-- Agregaty kampanii (strony syntetyzujące tydzień).
-- Metadane JSON dla analizy temporalnej.
-- Eksport do wektorowego indeksu (embeddingi) dla semantycznego wyszukiwania.
-- Filtry UI (kampania / zakres dat / tag logiczny).
-- Wczesne alerty duplikacji semantycznej (embedding similarity > threshold).
+## � Obserwowalność
+Log `logs/last_run.txt` po wdrożeniu 4.0 (przykład):
+```
+DATA=2025-09-23T12:34:56.123456 | KAMPANIA=Psychologia Sprawcy | TRYB=master | TEMAT=... | SLUG=... | TYTUL=... | SŁOWA=842
+```
+
+---
+
+## ▶️ Następny Krok
+1. Zastosować trzy bloki KROK 1–3 w `update_blog.py`.
+2. Uruchomić lokalnie: `python update_blog.py`.
+3. Zweryfikować log + push.
+4. Oznaczyć release (tag v4.0) – opcjonalnie.
 
 ---
 
 ## 🧾 Licencja
-Otwarte do adaptacji. Atrybucja mile widziana, niewymagana.
+Otwarty do adaptacji. Atrybucja mile widziana – nie wymagana.
 
 ---
 
-## 📌 Szybki Checklist Developer’a
-- [x] Kampanie rotacyjne działają
-- [x] Selektywny log per wpis
-- [x] Reset per kategoria (nie globalny)
-- [x] Brak obrazów (świadoma decyzja UX)
-- [x] Paginacja (21 / strona) aktywna
-- [x] Spis i sitemap zawsze regenerowane
+## ✔️ Checklist po Merge (Developer)
+- [ ] Retry działa (przetestowano sztucznie wymuszoną awarię)
+- [ ] Fallback nienaruszony
+- [ ] `fetch_ai_article` usunięty
+- [ ] Log zawiera SŁOWA
+- [ ] Brak regresji w generacji RSS / sitemap / spis
+- [ ] Commit oznaczony prefiksem
 
-Jeśli potrzebujesz rozszerzyć funkcjonalność – opisz intencję (semantyka / warstwa prezentacji / analityka), a dopasuję kolejne iteracje.
+---
+
+Jeśli potrzebujesz kolejnych funkcji (embeddings, analityka semantyczna, warstwa API) – opisz cel biznesowy; zaproponuję iterację 5.0.
