@@ -163,7 +163,28 @@ def pick_inspiration(config: dict) -> tuple[str, str] | tuple[None, None]:
     print(f"Wybrano temat '{chosen_inspiration}' z kampanii '{campaign_name}'.")
     return chosen_inspiration, campaign_name
 
-# === KROK 5: Główny, Kreatywny Silnik Generowania Treści ===
+# === KROK 5: System Generowania Treści Offline ===
+def generate_offline_content(inspiration: str) -> str:
+    """Generuje przyzwoitą treść offline gdy API nie działa."""
+    sections = [
+        f"<h1>{inspiration}</h1>",
+        f"<p>Temat <strong>{inspiration.lower()}</strong> stanowi fascynujące pole badawcze w kontekście współczesnych wyzwań psychologicznych i społecznych.</p>",
+        f"<h2>Kontekst Problemu</h2>",
+        f"<p>W kontekście analizowanego studium przypadku, {inspiration.lower()} ujawnia się jako kluczowy element wpływający na dynamikę relacyjną i rozwój osobisty.</p>",
+        f"<h2>Analiza Psychologiczna</h2>",
+        f"<p>Psychologiczne mechanizmy leżące u podstaw tego zjawiska wskazują na głębokie wzorce behawioralne, które wymagają starannej analizy i zrozumienia.</p>",
+        f"<p>Badania wskazują, że {inspiration.lower()} może mieć długotrwałe konsekwencje dla:</p>",
+        f"<ul><li>Zdrowia psychicznego jednostki</li><li>Jakości relacji interpersonalnych</li><li>Rozwoju osobistego i samopoznania</li><li>Zdolności do budowania zaufania</li></ul>",
+        f"<h2>Implikacje Praktyczne</h2>",
+        f"<p>Zrozumienie mechanizmów związanych z {inspiration.lower()} może pomóc w:</p>",
+        f"<ul><li>Rozpoznawaniu wczesnych sygnałów ostrzegawczych</li><li>Opracowywaniu skutecznych strategii interwencyjnych</li><li>Budowaniu odporności psychicznej</li></ul>",
+        f"<h2>Wnioski</h2>",
+        f"<p>Analiza {inspiration.lower()} podkreśla wagę holistycznego podejścia do zdrowia psychicznego i jakości relacji. Wymaga to nie tylko zrozumienia teorii, ale także praktycznego zastosowania wiedzy w codziennym życiu.</p>",
+        f"<p><em>Ten artykuł został wygenerowany w trybie offline. Pełna analiza z wykorzystaniem sztucznej inteligencji będzie dostępna po przywróceniu połączenia z API.</em></p>"
+    ]
+    return "\n".join(sections)
+
+# === KROK 6: Główny, Kreatywny Silnik Generowania Treści ===
 def generate_creative_article(inspiration: str, master_prompt: str) -> dict:
     """Generuje kreatywny artykuł na podstawie inspiracji, zwracając JSON."""
     
@@ -214,11 +235,11 @@ Struktura JSON-a:
     fallback_content = {
         "title": f"Analiza tematu: {inspiration}",
         "meta_description": "W tym artykule przyglądamy się bliżej zagadnieniu, analizując jego różne aspekty w kontekście studium przypadku.",
-        "html_content": f"<h1>Analiza tematu: {inspiration}</h1><p>Niestety, automatyczne generowanie treści nie powiodło się. Prosimy spróbować ponownie później. Ten artykuł jest jedynie szablonem zastępczym.</p>",
+        "html_content": generate_offline_content(inspiration),
         "faq_json_ld": {}
     }
 
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             print(f"Wysyłanie zapytania do Gemini z pełnym kontekstem... (próba {attempt + 1})")
             model = genai.GenerativeModel(
@@ -242,11 +263,12 @@ Struktura JSON-a:
                 
         except Exception as e:
             print(f"Błąd podczas generowania treści (próba {attempt + 1}): {e}")
-            if attempt < 1:
-                print("Ponawiam próbę za 15 sekund...")
-                time.sleep(15)
+            if attempt < 2:
+                wait_time = 30 if attempt == 0 else 60
+                print(f"Ponawiam próbę za {wait_time} sekund...")
+                time.sleep(wait_time)
 
-    print("Nie udało się wygenerować treści po 2 próbach. Używam treści zastępczej.")
+    print("Nie udało się wygenerować treści po 3 próbach. Używam treści zastępczej.")
     return fallback_content
 
 # === KROK 6: Reszta Skryptu ===
@@ -447,24 +469,40 @@ def commit_and_push_changes(repo_path: Path, commit_message: str):
 
 def main():
     """Główna funkcja sterująca skryptem."""
+    print("=== TRUE RESULTS ONLINE - GENERATOR ARTYKUŁÓW ===")
+    print(f"Data: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
+    
     try:
         config = load_config_from_excel(CONFIG_FILE)
     except Exception as e:
-        print(f"Zatrzymano skrypt z powodu błędu konfiguracji: {e}")
+        print(f"❌ Zatrzymano skrypt z powodu błędu konfiguracji: {e}")
         return
 
     inspiration, campaign = pick_inspiration(config)
     if not inspiration:
-        print("Nie udało się wybrać inspiracji na dziś. Kończę pracę.")
+        print("❌ Nie udało się wybrać inspiracji na dziś. Kończę pracę.")
         return
+
+    print(f"✅ Wybrana inspiracja: '{inspiration}'")
+    print(f"✅ Kampania: '{campaign}'")
+    print()
 
     master_prompt = build_master_prompt(config)
     
+    print("🚀 Rozpoczynam generowanie artykułu...")
     article_data = generate_creative_article(inspiration, master_prompt)
     
     if not article_data or not article_data.get("title"):
-        print("Nie udało się wygenerować danych artykułu. Kończę pracę.")
+        print("❌ Nie udało się wygenerować danych artykułu. Kończę pracę.")
         return
+    
+    # Sprawdzanie czy to treść generowana przez AI czy fallback
+    is_ai_content = "trybie offline" not in article_data.get("html_content", "")
+    status_icon = "🤖" if is_ai_content else "📝"
+    content_type = "AI" if is_ai_content else "Offline"
+    print(f"{status_icon} Wygenerowano artykuł ({content_type}): '{article_data['title']}'")
+    print()
 
     # Zapisanie użytej inspiracji
     save_used_topic(inspiration)
@@ -486,7 +524,8 @@ def main():
         PAGES_DIR.mkdir(parents=True, exist_ok=True)
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(post_html)
-        print(f"Dodano wpis: {article_data['title']} -> {filename}")
+        print(f"✅ Utworzono plik HTML: {filename}")
+        print(f"📄 Długość treści: {len(article_data.get('html_content', ''))} znaków")
 
     except FileNotFoundError:
         print(f"Błąd: Nie znaleziono pliku szablonu {POST_TEMPLATE_FILE}")
@@ -496,13 +535,21 @@ def main():
         return
 
     # Aktualizacja plików głównych
+    print("🔄 Aktualizuję pliki główne...")
     insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", campaign)
     update_sitemap_and_rss(post_url, article_data['title'], article_data['meta_description'])
     update_spis_tresci(f"pages/{filename}", article_data['title'], article_data['meta_description'])
+    print("✅ Zaktualizowano: index.html, sitemap.xml, rss.xml, spis.html")
 
     # Commit i push
     commit_message = f"Automatyczny wpis: {article_data['title']}"
+    print("📤 Wysyłam zmiany do repozytorium...")
     commit_and_push_changes(REPO_PATH, commit_message)
+    
+    print()
+    print("🎉 SUKCES! Artykuł został wygenerowany i opublikowany.")
+    print(f"🔗 URL: {post_url}")
+    print("=" * 50)
 
 if __name__ == "__main__":
     main()
