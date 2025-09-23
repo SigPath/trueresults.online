@@ -296,41 +296,52 @@ def insert_card_in_index(file_path: Path, title: str, description: str, link: st
         return
 
     with open(file_path, 'r+', encoding='utf-8') as f:
-        soup = BeautifulSoup(f, 'html.parser')
+        content = f.read()
+        soup = BeautifulSoup(content, 'html.parser')
         
-        grid = soup.find('div', class_='grid')
-        if not grid:
-            print("Nie znaleziono siatki 'grid' w pliku index.html.")
+        container = soup.find(id='posts-container')
+        if not container:
+            print("Nie znaleziono kontenera '#posts-container' w pliku index.html.")
             return
             
-        # Tworzenie nowej karty
-        new_card = soup.new_tag('div', **{'class': 'card'})
-        
         # Ustawienie polskiej lokalizacji dla nazw miesięcy
         import locale
         try:
             locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
             human_date = datetime.datetime.now().strftime('%d %B %Y')
+            iso_date = datetime.datetime.now().strftime('%Y-%m-%d')
         except locale.Error:
             print("Nie można ustawić polskiej lokalizacji. Data będzie w domyślnym formacie.")
             human_date = datetime.datetime.now().strftime('%d %B %Y')
+            iso_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
-        card_content = f"""
-            <div class="card-category">{campaign}</div>
-            <h2><a href="{link}">{title}</a></h2>
-            <p>{description}</p>
-            <div class="card-footer">
-                <a href="{link}" class="read-more">Czytaj dalej...</a>
-                <span>{human_date}</span>
-            </div>
-        """
-        new_card.append(BeautifulSoup(card_content, 'html.parser'))
+        card_html = f"""
+      <article class="group relative flex flex-col rounded-xl border border-border/70 bg-surface/90 p-6 shadow-sm hover:shadow-lift hover:-translate-y-1 transition-all duration-300" itemscope="True" itemtype="https://schema.org/BlogPosting">
+       <h3 class="mt-4 text-lg font-semibold leading-snug group-hover:text-accent transition-colors" itemprop="headline">
+        {title}
+       </h3>
+       <time class="mt-2 text-xs text-text/60" datetime="{iso_date}" itemprop="datePublished">
+        Opublikowano: {human_date}
+       </time>
+       <p class="mt-4 text-sm leading-relaxed text-text/80 line-clamp-5" itemprop="description">
+        {description}
+       </p>
+       <a aria-label="Czytaj dalej: {title}" class="mt-5 inline-flex items-center text-sm font-medium text-accent hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60" href="{link}" itemprop="url">
+        Czytaj dalej →
+       </a>
+       <meta content="True Results Online" itemprop="author"/>
+      </article>
+"""
         
-        # Wstawienie nowej karty na początku siatki
-        grid.insert(0, new_card)
+        placeholder = soup.find(string=lambda text: "AUTO-BLOG: NOWE WPISY" in text)
+        if placeholder:
+            placeholder.insert_before(BeautifulSoup(card_html, 'html.parser'))
+        else:
+            # Fallback if placeholder comment is missing
+            container.insert(0, BeautifulSoup(card_html, 'html.parser'))
         
         f.seek(0)
-        f.write(str(soup.prettify()))
+        f.write(str(soup))
         f.truncate()
 
 def update_sitemap_and_rss(new_post_url: str, title: str, description: str):
@@ -372,24 +383,48 @@ def update_sitemap_and_rss(new_post_url: str, title: str, description: str):
                 f.write(content)
                 f.truncate()
 
-def update_spis_tresci(new_post_url: str, title: str):
+def update_spis_tresci(new_post_url: str, title: str, description: str):
     """Aktualizuje plik spisu treści."""
     if not SPIS_TRESCI_FILE.exists():
         return
     with open(SPIS_TRESCI_FILE, 'r+', encoding='utf-8') as f:
-        soup = BeautifulSoup(f, 'html.parser')
+        content = f.read()
+        soup = BeautifulSoup(content, 'html.parser')
         
-        main_list = soup.find('ul')
-        if main_list:
-            new_li = soup.new_tag('li')
-            new_a = soup.new_tag('a', href=new_post_url.replace(str(REPO_PATH), '..'))
-            new_a.string = title
-            new_li.append(new_a)
-            main_list.insert(0, new_li)
-            
-            f.seek(0)
-            f.write(str(soup.prettify()))
-            f.truncate()
+        container = soup.find('div', class_='space-y-8')
+        if not container:
+            print("Nie znaleziono kontenera 'space-y-8' w pliku spis.html.")
+            return
+
+        # Ustawienie polskiej lokalizacji dla nazw miesięcy
+        import locale
+        try:
+            locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
+            iso_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        except locale.Error:
+            print("Nie można ustawić polskiej lokalizacji. Data będzie w domyślnym formacie.")
+            iso_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
+        article_html = f"""
+<article class='border-b border-border/40 pb-6'>
+    <h2 class='text-lg font-semibold'>
+        <a class='hover:text-accent transition-colors' href='{new_post_url}'>{title} – True Results Online</a>
+    </h2>
+    <p class='mt-1 text-xs text-text/60'>{iso_date}</p>
+    <p class='mt-2 text-sm text-text/80 leading-relaxed'>{description}</p>
+</article>
+"""
+        
+        placeholder = soup.find(string=lambda text: "AUTO-BLOG: NOWE WPISY" in text)
+        if placeholder:
+            placeholder.insert_before(BeautifulSoup(article_html, 'html.parser'))
+        else:
+            # Fallback if placeholder comment is missing
+            container.insert(0, BeautifulSoup(article_html, 'html.parser'))
+
+        f.seek(0)
+        f.write(str(soup))
+        f.truncate()
 
 def commit_and_push_changes(repo_path: Path, commit_message: str):
     """Wprowadza zmiany do repozytorium Git i wysyła je na serwer."""
@@ -463,7 +498,7 @@ def main():
     # Aktualizacja plików głównych
     insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", campaign)
     update_sitemap_and_rss(post_url, article_data['title'], article_data['meta_description'])
-    update_spis_tresci(f"pages/{filename}", article_data['title'])
+    update_spis_tresci(f"pages/{filename}", article_data['title'], article_data['meta_description'])
 
     # Commit i push
     commit_message = f"Automatyczny wpis: {article_data['title']}"
