@@ -209,6 +209,43 @@ Potencjalne rozszerzenia:
 ## Licencja
 Możesz adaptować wedle potrzeb.
 
+---
+
+## Wersja 3.0 – Pełna Integracja Master Promptu
+
+Od wersji 3.0 cała generacja treści przechodzi przez funkcję `generate_full_article_from_master_prompt(topic)`, która:
+
+1. Wewnątrz ładuje `MASTER_PROMPT` + (opcjonalne) `case_study.txt` poprzez `load_master_prompt()`.
+2. Buduje złożony prompt: kontekst + AKTUALNY TEMAT + instrukcje struktury (9 sekcji h2, akapity p).
+3. Wysyła zapytanie do Gemini (model z `GEMINI_MODEL_ARTICLE`).
+4. Wypisuje w konsoli znacznik: `Wysyłanie zapytania do Gemini z pełnym kontekstem...`.
+5. W razie limitu / błędu API – fallback do skróconej wersji sekcyjnej.
+
+Konfiguracja:
+| Zmienna | Znaczenie |
+|---------|-----------|
+| `USE_MASTER_PROMPT=1` | Aktywuje pełny prompt kontekstowy |
+| `ART_MIN_WORDS` / `ART_MAX_WORDS` | Deklarowany zakres długości artykułu |
+| `GEMINI_MODEL_ARTICLE` | Model do artykułów (domyśl.: gemini-1.5-flash-latest) |
+
+Pliki:
+- `prompts/master_prompt.py` – definicja `MASTER_PROMPT`.
+- `prompts/case_study.txt` – wstrzykiwany tekst studium (opcjonalny, placeholder gdy pusty).
+
+Tryb fallback oznaczony jest w logu i w polu `mode` (wartość `fallback`).
+
+Jeśli chcesz wymusić tylko fallback (bez kontekstu) tymczasowo:
+```bash
+export USE_MASTER_PROMPT=0
+python3 update_blog.py
+```
+
+Powrót:
+```bash
+export USE_MASTER_PROMPT=1
+```
+
+
 ## Jednoprzyciskowy wrapper uruchomieniowy
 
 Dodano skrypt `run_autoblog.py` oraz prosty wrapper Bash `run_autoblog.sh` aby uprościć lokalne wielokrotne generowanie:
