@@ -62,15 +62,29 @@
   </script>
   <style>
    body { font-family: 'Inter', system-ui, sans-serif; }
-    /* Subtle focus outline for accessibility */
     :focus-visible {
       outline: 2px solid #58a6ff;
       outline-offset: 2px;
     }
   </style>
   <!-- JSON-LD Structured Data Placeholder -->
-  <script type="application/ld+json">
-   {"@context": "https://schema.org", "@type": "Blog", "name": "True Results Online", "blogPost": [{"@type": "BlogPosting", "headline": "artyku-bez-tytu-u-20250923", "datePublished": "2025-09-23", "url": "https://trueresults.online/pages/artyku-bez-tytu-u-20250923.html", "description": "Analiza."}]}
+  <script id="structured-data" type="application/ld+json">
+   {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": "https://trueresults.online/#blog",
+    "name": "True Results Online",
+    "url": "https://trueresults.online/",
+    "description": "Psychologicznie ugruntowane analizy dla głębszego zrozumienia rzeczywistości informacyjnej.",
+    "inLanguage": "pl",
+    "publisher": {
+      "@type": "Organization",
+      "@id": "https://trueresults.online/#organization",
+      "name": "True Results Online",
+      "url": "https://trueresults.online/"
+    },
+    "blogPost": []
+  }
   </script>
   <link href="feed.xml" rel="alternate" title="True Results Online RSS" type="application/rss+xml"/>
  </head>
@@ -78,7 +92,6 @@
   <a class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-surface text-text text-sm px-4 py-2 rounded shadow border border-border" href="#latest">
    Przejdź do treści
   </a>
-  <!-- Header -->
   <header class="border-b border-border/60 backdrop-blur supports-[backdrop-filter]:bg-background/70 sticky top-0 z-50">
    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
     <a aria-label="Strona główna True Results Online" class="font-semibold tracking-tight text-lg hover:text-accent transition-colors" href="#">
@@ -98,7 +111,6 @@
    </div>
   </header>
   <main>
-   <!-- Hero Section -->
    <section aria-labelledby="hero-heading" class="pt-20 pb-16 md:pt-28 md:pb-20 animate-fade-in">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
      <h1 class="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-b from-white to-text/80 bg-clip-text text-transparent" id="hero-heading">
@@ -109,126 +121,39 @@
      </p>
     </div>
    </section>
-   <!-- Blog Posts Section -->
    <section aria-labelledby="latest-heading" class="py-8 md:py-14 border-t border-border/60 animate-fade-in" id="latest">
     <div class="max-w-6xl mx-auto px-4 sm:px-6">
-     <div class="flex items-end justify-between gap-4 flex-wrap">
+     <div class="flex items-end justify-between gap-4 flex-wrap mb-10">
       <h2 class="text-2xl md:text-3xl font-semibold" id="latest-heading">
        Najnowsze Analizy
       </h2>
-      <div class="flex flex-col items-end gap-0.5">
-       <span class="text-xs uppercase tracking-wider text-text/60">
-        Aktualizowane Regularnie
-       </span>
-      </div>
-      <div class="max-w-6xl mx-auto px-4 sm:px-6">
-       <div aria-busy="false" aria-live="polite" class="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3" id="auto-blog-section">
-        <article class="post-card">
-         <h2>
-          <a href="pages/jak-wartosci-ksztaltuja-nasze-wybory-w-relacjach-cz-3-20250923.html">
-           Jak Wartości Kształtują Nasze Wybory w Relacjach (cz. 3)
-          </a>
-         </h2>
-         <p class="meta">
-          2025-09-23 • Tematy Ogólne i Ponadczasowe
-         </p>
-         <p>
-          Analiza przypadku Osoby A, kobiety zbliżającej się do czterdziestki, pracującej w prestiżowym zawodzie i będącej samotną matką, pozwala na dogłębne zbadani…
-         </p>
-        </article>
-        <article class="post-card">
-         <h2>
-          <a href="pages/jak-komunikowac-swoje-potrzeby-w-zdrowy-sposob-cz-4-20250923.html">
-           Jak Komunikować Swoje Potrzeby w Zdrowy Sposób (cz. 4)
-          </a>
-         </h2>
-         <p class="meta">
-          2025-09-23 • Tematy Ogólne i Ponadczasowe
-         </p>
-         <p>
-          Analiza przypadku Osoby A rzuca światło na destrukcyjny wpływ niezdrowych wzorców komunikacji na budowanie satysfakcjonujących relacji. Nieumiejętność jasn…
-         </p>
-        </article>
-        <article class="post-card">
-         <h2>
-          <a href="pages/jak-komunikowac-swoje-potrzeby-w-zdrowy-sposob-cz-3-20250923.html">
-           Jak Komunikować Swoje Potrzeby w Zdrowy Sposób (cz. 3)
-          </a>
-         </h2>
-         <p class="meta">
-          2025-09-23 • Tematy Ogólne i Ponadczasowe
-         </p>
-         <p>
-          Analiza przypadku Osoby A ujawnia głęboki brak umiejętności zdrowej komunikacji potrzeb. Komunikacja, w jej rozumieniu, sprowadza się do manipulacji i inst…
-         </p>
-        </article>
-        <article class="post-card">
-         <h2>
-          <a href="pages/jak-rozpoznac-czerwone-flagi-na-poczatku-znajomosci-cz-2-20250923.html">
-           Jak Rozpoznać Czerwone Flagi na Początku Znajomości (cz. 2)
-          </a>
-         </h2>
-         <p class="meta">
-          2025-09-23 • Tematy Ogólne i Ponadczasowe
-         </p>
-         <p>
-          Wczesne rozpoznawanie nieprawidłowych wzorców zachowań w relacjach może uchronić przed długotrwałym cierpieniem i emocjonalnym wyczerpaniem.  Analiza przyp…
-         </p>
-        </article>
-        <article class="post-card">
-         <h2>
-          <a href="pages/czym-jest-dojrzala-milosc-cz-2-20250923.html">
-           Czym Jest Dojrzała Miłość? (cz. 2)
-          </a>
-         </h2>
-         <p class="meta">
-          2025-09-23 • Tematy Ogólne i Ponadczasowe
-         </p>
-         <p>
-          Studium przypadku Osoby A rzuca jaskrawe światło na to, czym nie jest dojrzała miłość.  Analizując jej dysfunkcyjne wzorce, możemy zdefiniować dojrzałą mił…
-         </p>
-        </article>
-        <article class="post-card">
-         <h2>
-          <a href="pages/czym-jest-prawdziwa-intymnosc-w-zwiazku-20250923.html">
-           Czym Jest Prawdziwa Intymność w Związku?
-          </a>
-         </h2>
-         <p class="meta">
-          2025-09-23 • Tematy Ogólne i Ponadczasowe
-         </p>
-         <p>
-          Czym jest prawdziwa intymność w związku? To pytanie, zdawałoby się proste, ujawnia swoją złożoność w kontekście przypadków, w których relacje oparte na poz…
-         </p>
-        </article>
-        <article class="post-card">
-         <h2>
-          <a href="pages/jak-wartosci-ksztaltuja-nasze-wybory-w-relacjach-cz-2-20250923.html">
-           Jak Wartości Kształtują Nasze Wybory w Relacjach (cz. 2)
-          </a>
-         </h2>
-         <p class="meta">
-          2025-09-23 • Tematy Ogólne i Ponadczasowe
-         </p>
-         <p>
-          Analiza przypadku Osoby A, kobiety zbliżającej się do czterdziestki, ukazuje złożoną interakcję między deklarowanymi wartościami a rzeczywistymi wyborami w…
-         </p>
-        </article>
-        <!-- AUTO-BLOG: NOWE WPISY WSTAWIAĆ PONIŻEJ TEGO KOMENTARZA -->
-       </div>
-      </div>
+      <span class="text-xs uppercase tracking-wider text-text/60">
+       Aktualizowane Regularnie
+      </span>
+     </div>
+     <div aria-busy="false" aria-live="polite" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3" id="posts-container">
+      <article class="flex flex-col gap-2 rounded-lg border border-border bg-surface shadow-lift transition-transform duration-300 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-accent/80">
+       <a aria-label="Przeczytaj więcej o Jak Rozpoznać Czerwone Flagi na Początku Znajomości" class="block p-6" href="pages/jak-rozpoznac-czerwone-flagi-na-poczatku-znajomosci-20250923.html">
+        <h3 class="font-semibold text-base leading-snug tracking-tight text-text/90 hover:text-accent transition-colors">
+         Jak Rozpoznać Czerwone Flagi na Początku Znajomości
+        </h3>
+        <p class="mt-3 text-xs text-text/60">
+         23 September 2025 • Tematy Ogólne i Ponadczasowe
+        </p>
+       </a>
+      </article>
+      <!-- AUTO-BLOG: NOWE WPISY BĘDĄ WSTAWIANE TUTAJ PRZEZ SKRYPT -->
      </div>
     </div>
    </section>
-   <!-- Archive Section (Added) -->
    <section class="py-10 md:py-12 border-t border-border/60 bg-surface/40 animate-fade-in" id="archive-preview">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
      <div class="max-w-2xl">
       <h3 class="text-xl md:text-2xl font-semibold tracking-tight">
-       Archiwum wiadomości
+       Pełne Archiwum
       </h3>
       <p class="mt-2 text-sm md:text-base text-text/70 leading-relaxed">
-       Powyżej znajdziesz tylko 21 najnowszych analiz. Wszystkie wcześniejsze wpisy dostępne są w pełnym spisie treści.
+       Powyżej wyświetlanych jest tylko 21 najnowszych analiz. Wszystkie opublikowane wpisy dostępne są w pełnym spisie treści.
       </p>
      </div>
      <div class="shrink-0">
@@ -238,7 +163,6 @@
      </div>
     </div>
    </section>
-   <!-- About Section -->
    <section aria-labelledby="about-heading" class="py-16 md:py-24 border-t border-border/60 animate-fade-in" id="about">
     <div class="max-w-4xl mx-auto px-4 sm:px-6">
      <h2 class="text-2xl md:text-3xl font-semibold" id="about-heading">
@@ -251,31 +175,10 @@
       <p>
        Każdy tekst ma wydobywać ukryte założenia, błędy poznawcze oraz siły systemowe leżące u podstaw współczesnych zjawisk społecznych, ekonomicznych i interpersonalnych.
       </p>
-      <p>
-       Treści mają charakter edukacyjny: wzmacniają odporność analityczną i pomagają budować osadzony w rzeczywistości, niesensacyjny model świata.
-      </p>
-      <p>
-       Przyszłe iteracje obejmą interaktywne modele, źródłowane odniesienia oraz warstwę danych ilościowych wspierającą jakościowe wnioski.
-      </p>
      </div>
     </div>
    </section>
-   <!--AUTO-BLOG-->
-   <article class="post-card">
-    <h2>
-     <a href="pages/artyku-bez-tytu-u-20250923.html">
-      Artykuł Bez Tytułu
-     </a>
-    </h2>
-    <p class="meta">
-     2025-09-23 • Regulacja wewnętrzna vs. poszukiwanie bodźców
-    </p>
-    <p class="desc">
-     Analiza.
-    </p>
-   </article>
   </main>
-  <!-- Footer -->
   <footer class="border-t border-border/60 py-8 text-sm text-text/60 animate-fade-in">
    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
     <p>
@@ -284,21 +187,17 @@
      </span>
      True Results Online. Wszelkie prawa zastrzeżone.
     </p>
-    <!-- Usunięto linki 'O projekcie' i 'Kontakt' na życzenie -->
    </div>
   </footer>
   <script>
-   // Set dynamic year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // Optional: IntersectionObserver for fade-in on scroll
+   document.getElementById('year').textContent = new Date().getFullYear();
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('opacity-100','translate-y-0');
         }
       });
-    }, { threshold: 0.2 });
+    }, { threshold: 0.1 });
 
     document.querySelectorAll('.animate-fade-in').forEach(el => {
       el.classList.add('opacity-0','translate-y-4','transition','duration-700');
