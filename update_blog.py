@@ -1,462 +1,432 @@
-# === PROMPT DLA GITHUB COPILOT - WERSJA 6.0 (Integracja z Excel) ===
+# === PROMPT DLA GITHUB COPILOT - WERSJA 6.1 (Autonomiczny Analityk AI) ===
 #
-# Cel: Stworzenie nowej, czystej wersji skryptu `update_blog.py`, która całą swoją logikę
-# merytoryczną i konfiguracyjną pobiera z zewnętrznego pliku `config.xlsx`.
+# Cel: Stworzenie ostatecznej, kreatywnej wersji skryptu `update_blog.py`.
+# System ma wczytywać konfigurację z pliku `config.xlsx`, a następnie, na podstawie
+# krótkiej "inspiracji" z arkusza KampanieTematyczne, zlecać AI samodzielne
+# wymyślenie tytułu i napisanie unikalnego, głębokiego artykułu.
 #
 # INSTRUKCJA DLA COPILOTA:
-# Wygeneruj kompletny skrypt w Pythonie od zera. Skrypt musi być w pełni funkcjonalny
-# i realizować poniższe kroki. Pamiętaj o importach, obsłudze błędów i czytelności.
+# Wygeneruj kompletny, czysty skrypt w Pythonie, który realizuje poniższą logikę.
 
-# === KROK 1: Importy i Podstawowa Konfiguracja ===
-#
-# TODO Copilot: Zaimportuj wszystkie niezbędne biblioteki:
-# os, time, datetime, random, re, json, Path, List, Dict, Optional,
-# BeautifulSoup, Repo, slugify, i co najważniejsze: pandas.
-# Zdefiniuj podstawowe stałe ścieżek do plików, jak REPO_PATH, PAGES_DIR,
-# INDEX_FILE, TEMPLATE_FILE, a przede wszystkim CONFIG_FILE = REPO_PATH / "config.xlsx".
-# Wczytaj zmienne techniczne (GEMINI_API_KEY, DRY_RUN) z pliku .env.
-
+# === KROK 1: Importy i Konfiguracja ===
 import os
 import time
-import datetime as dt
+import datetime
 import random
 import re
 import json
 from pathlib import Path
-from typing import List, Dict, Optional
-
 import pandas as pd
 from bs4 import BeautifulSoup
 from git import Repo
 from slugify import slugify
+import google.generativeai as genai
+from dotenv import load_dotenv
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    print("[OSTRZEŻENIE] Biblioteka dotenv nie jest zainstalowana. Zmienne środowiskowe muszą być ustawione manualnie.")
-
-# --- Podstawowe stałe ---
-REPO_PATH = Path(os.getenv("REPO_PATH", Path(__file__).parent))
-PAGES_DIR = REPO_PATH / "pages"
-TEMPLATE_FILE = REPO_PATH / "szablon_wpisu.html"
-INDEX_FILE = REPO_PATH / "index.html"
-HISTORY_FILE = REPO_PATH / "used_topics_global.txt"
-LOG_DIR = REPO_PATH / "logs"
-LOG_FILE = LOG_DIR / "last_run.txt"
-FEED_FILE = REPO_PATH / "feed.xml"
-SITEMAP_FILE = REPO_PATH / "sitemap.xml"
-SPIS_FILE = REPO_PATH / "spis.html"
-TITLES_INDEX_FILE = REPO_PATH / "titles_index.txt"
+# Konfiguracja ścieżek
+REPO_PATH = Path(__file__).parent.resolve()
 CONFIG_FILE = REPO_PATH / "config.xlsx"
+USED_TOPICS_FILE = REPO_PATH / "used_topics_global.txt"
+TEMPLATES_PATH = REPO_PATH
+POST_TEMPLATE_FILE = TEMPLATES_PATH / "szablon_wpisu.html"
+INDEX_FILE = REPO_PATH / "index.html"
+PAGES_DIR = REPO_PATH / "pages"
+RSS_FILE = REPO_PATH / "rss.xml"
+SITEMAP_FILE = REPO_PATH / "sitemap.xml"
+SPIS_TRESCI_FILE = REPO_PATH / "spis.html"
 
-# --- Zmienne techniczne z .env ---
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "WPROWADZ_KLUCZ_LOKALNIE")
-if GEMINI_API_KEY == "WPROWADZ_KLUCZ_LOKALNIE":
-    GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "WPROWADZ_KLUCZ_LOKALNIE")
-DRY_RUN = os.getenv("DRY_RUN", "0") == "1"
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-latest")
-RETRY_DELAY_SECONDS = int(os.getenv("RETRY_DELAY_SECONDS", "25"))
-ART_MIN_WORDS = int(os.getenv("ART_MIN_WORDS", "650"))
-ART_MAX_WORDS = int(os.getenv("ART_MAX_WORDS", "900"))
-MAX_INDEX_CARDS = 21
-BASE_URL = os.getenv("BASE_URL", "https://trueresults.online").rstrip('/')
-SITE_NAME = "True Results Online"
+# Wczytanie zmiennych środowiskowych
+load_dotenv(REPO_PATH / ".env")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# Konfiguracja Gemini
+genai.configure(api_key=GEMINI_API_KEY)
+generation_config = {
+    "temperature": 1,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 8192,
+    "response_mime_type": "application/json",
+}
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+]
 
 # === KROK 2: Wczytywanie Konfiguracji z Pliku Excel ===
 def load_config_from_excel(path: Path) -> dict:
-    """
-    Wczytuje kompletną konfigurację merytoryczną z pliku Excel.
-    """
-    if not path.exists():
-        raise FileNotFoundError(f"Plik konfiguracyjny {path} nie został znaleziony. Przerwanie działania.")
-
-    print(f"Wczytywanie konfiguracji z pliku: {path}...")
+    """Wczytuje konfigurację z pliku Excel."""
     try:
         xls = pd.ExcelFile(path)
+        master_prompt_df = xls.parse('MasterPrompt', header=None)
+        case_study_df = xls.parse('CaseStudy', header=None)
+        kampanie_df = xls.parse('KampanieTematyczne', header=None)
 
-        # Arkusz 'MasterPrompt'
-        df_prompt = pd.read_excel(xls, 'MasterPrompt', header=None)
-        master_prompt_rules = dict(zip(df_prompt[0], df_prompt[1]))
-
-        # Arkusz 'CaseStudy'
-        df_case = pd.read_excel(xls, 'CaseStudy', header=None)
-        case_study_data = dict(zip(df_case[0], df_case[1]))
-
-        # Arkusz 'KampanieTematyczne'
-        df_campaigns = pd.read_excel(xls, 'KampanieTematyczne', header=None)
-        campaign_topics = {}
-        for _, row in df_campaigns.iterrows():
-            campaign_name = row[0]
-            topic_inspiration = row[1]
-            if campaign_name not in campaign_topics:
-                campaign_topics[campaign_name] = []
-            campaign_topics[campaign_name].append(topic_inspiration)
-        
-        print("Konfiguracja wczytana pomyślnie.")
-        return {
-            "master_prompt_rules": master_prompt_rules,
-            "case_study_data": case_study_data,
-            "campaign_topics": campaign_topics
+        config = {
+            "master_prompt_parts": master_prompt_df.rename(columns={0: 'Klucz', 1: 'Treść'}).to_dict('records'),
+            "case_study": case_study_df.rename(columns={0: 'Element', 1: 'Opis'}).to_dict('records'),
+            "campaigns": kampanie_df.groupby(0)[1].apply(list).to_dict()
         }
-
+        print(f"Wczytywanie konfiguracji z pliku: {path}...")
+        print("Konfiguracja wczytana pomyślnie.")
+        return config
+    except FileNotFoundError:
+        print(f"Błąd: Plik konfiguracyjny {path} nie został znaleziony.")
+        return {}
     except Exception as e:
-        raise IOError(f"Nie udało się wczytać lub przetworzyć pliku {path}: {e}")
-
+        print(f"Błąd podczas wczytywania konfiguracji z Excela: {e}")
+        return {}
 
 # === KROK 3: Dynamiczne Budowanie Master Promptu ===
 def build_master_prompt(config: dict) -> str:
-    """
-    Dynamicznie buduje pełny tekst Master Promptu na podstawie wczytanej konfiguracji.
-    """
-    prompt_parts = []
-
-    prompt_parts.append("### SEKCJA 1: GŁÓWNE ZAŁOŻENIA I REGUŁY (MASTER PROMPT) ###")
-    for key, value in config.get("master_prompt_rules", {}).items():
-        prompt_parts.append(f"**{key.strip()}**: {value.strip()}")
-
-    prompt_parts.append("\n### SEKCJA 2: STUDIUM PRZYPADKU (CASE STUDY) ###")
-    for key, value in config.get("case_study_data", {}).items():
-        prompt_parts.append(f"**{key.strip()}**: {value.strip()}")
+    """Dynamicznie buduje pełny tekst Master Promptu."""
+    prompt_parts = [part['Treść'] for part in config.get("master_prompt_parts", [])]
+    case_study_parts = [f"{row['Element']}: {row['Opis']}" for row in config.get("case_study", [])]
     
-    return "\n\n".join(prompt_parts)
+    case_study_full = "\n".join(case_study_parts)
+    
+    # Wstrzyknięcie Case Study do promptu
+    full_prompt = "\n\n".join(prompt_parts)
+    full_prompt = full_prompt.replace("{{CASE_STUDY}}", case_study_full)
+    
+    return full_prompt
 
+# === KROK 4: Logika Wyboru Inspiracji ===
+def get_used_topics():
+    """Wczytuje użyte tematy z pliku."""
+    if not USED_TOPICS_FILE.exists():
+        return set()
+    with open(USED_TOPICS_FILE, 'r', encoding='utf-8') as f:
+        return set(line.strip() for line in f)
 
-# === KROK 4: Zaktualizowana Logika Wyboru Tematu ===
-def get_current_campaign(campaign_topics: dict, today: Optional[dt.date] = None) -> str:
-    """Zwraca nazwę bieżącej kampanii na podstawie tygodnia w roku."""
-    d = today or dt.date.today()
-    campaign_names = list(campaign_topics.keys())
+def save_used_topic(topic: str):
+    """Zapisuje użyty temat do pliku."""
+    with open(USED_TOPICS_FILE, 'a', encoding='utf-8') as f:
+        f.write(topic + '\n')
+
+def get_current_campaign(config: dict) -> str:
+    """Określa bieżącą kampanię na podstawie daty."""
+    today = datetime.date.today()
+    campaign_names = list(config.get("campaigns", {}).keys())
     if not campaign_names:
-        raise ValueError("Brak zdefiniowanych kampanii w konfiguracji.")
-    return campaign_names[d.isocalendar().week % len(campaign_names)]
+        return None
+    # Prosta logika rotacji kampanii co tydzień
+    week_number = today.isocalendar()[1]
+    campaign_index = week_number % len(campaign_names)
+    return campaign_names[campaign_index]
 
-def pick_topic(campaign_topics: dict, campaign_name: str) -> str:
-    """Wybiera unikalny temat z bieżącej kampanii."""
-    available_topics = campaign_topics.get(campaign_name, [])
-    if not available_topics:
-        return f"Brak dostępnych tematów w kampanii '{campaign_name}'"
+def pick_inspiration(config: dict) -> tuple[str, str] | tuple[None, None]:
+    """Wybiera nową, nieużytą inspirację z bieżącej kampanii."""
+    campaign_name = get_current_campaign(config)
+    if not campaign_name:
+        print("Brak zdefiniowanych kampanii w konfiguracji.")
+        return None, None
 
-    try:
-        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            history = {line.strip().split('|', 1)[-1] for line in f}
-    except FileNotFoundError:
-        history = set()
-
-    unique_topics = [t for t in available_topics if t not in history]
-
-    if not unique_topics:
-        print(f"[OSTRZEŻENIE] Wszystkie tematy z kampanii '{campaign_name}' zostały już użyte. Resetuję historię dla tej kampanii.")
-        topic = random.choice(available_topics)
-    else:
-        topic = random.choice(unique_topics)
-
-    with open(HISTORY_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{campaign_name}|{topic}\n")
+    inspirations = config["campaigns"].get(campaign_name, [])
+    used_topics = get_used_topics()
     
-    return topic
+    available_inspirations = [insp for insp in inspirations if insp not in used_topics]
+    
+    if not available_inspirations:
+        print(f"Wszystkie inspiracje z kampanii '{campaign_name}' zostały już wykorzystane.")
+        # Opcjonalnie: zresetuj listę użytych tematów dla tej kampanii
+        return None, None
+        
+    chosen_inspiration = random.choice(available_inspirations)
+    print(f"Wybrano temat '{chosen_inspiration}' z kampanii '{campaign_name}'.")
+    return chosen_inspiration, campaign_name
 
-
-# === KROK 5: Główny Silnik Generowania Treści ===
-def generate_article(topic: str, master_prompt: str) -> dict:
-    """
-    Główna funkcja generująca treść z mechanizmem retry.
-    """
+# === KROK 5: Główny, Kreatywny Silnik Generowania Treści ===
+def generate_creative_article(inspiration: str, master_prompt: str) -> dict:
+    """Generuje kreatywny artykuł na podstawie inspiracji, zwracając JSON."""
+    
     final_prompt = f"""{master_prompt}
----
-### AKTUALNE ZADANIE DLA AI ###
-Na podstawie powyższego, ultra-szczegółowego studium przypadku, wygeneruj teraz analityczny, głęboki artykuł blogowy na temat:
-**"{topic}"**
 
-**ŚCISŁE WYMAGANIA:**
-- **Długość:** Artykuł musi mieć między {ART_MIN_WORDS} a {ART_MAX_WORDS} słów.
-- **Styl i Ton:** Zachowaj chłodny, analityczny i psychologiczny ton zdefiniowany w Master Prompcie. Bądź bezlitosny w swojej analizie, ale unikaj języka nienawiści. Demaskuj, a nie obrażaj.
-- **Formatowanie HTML:** Całość musi być gotowym do wklejenia kodem HTML. Użyj nagłówków `<h2>` dla kluczowych sekcji analizy. Całą treść umieść w akapitach `<p>`. Najważniejsze frazy pogrub za pomocą `<strong>`.
-- **Treść:** Zacznij od razu od treści artykułu. Nie dodawaj tytułu ani wstępów typu "Oto artykuł:".
----
-GENERUJ ARTYKUŁ TERAZ:
+Twoim dzisiejszym zadaniem jest napisanie artykułu inspirowanego poniższą frazą.
+
+INSPIRACJA: "{inspiration}"
+
+Twoje zadania:
+1.  **Wymyśl Tytuł:** Stwórz kreatywny, intrygujący i unikalny tytuł dla artykułu, który nawiązuje do inspiracji i studium przypadku.
+2.  **Napisz Artykuł:** Napisz głęboki, analityczny artykuł. Masz pełną swobodę co do jego struktury. Możesz używać nagłówków, list, cytatów. Artykuł musi być napisany w formacie HTML.
+3.  **Wygeneruj Meta Opis:** Stwórz krótki (150-160 znaków) meta opis, który jest esencją artykułu i zachęca do kliknięcia.
+4.  **Stwórz Sekcję FAQ:** Przygotuj 3-4 pytania i odpowiedzi w formacie JSON-LD, które rozwijają kluczowe aspekty artykułu.
+
+Całość zwróć jako pojedynczy obiekt JSON, bez żadnych dodatkowych znaków czy formatowania markdown.
+
+Struktura JSON-a:
+{{
+  "title": "Twój wymyślony, kreatywny tytuł",
+  "meta_description": "Twój wygenerowany meta opis (150-160 znaków).",
+  "html_content": "<h1>Twój Tytuł</h1><p>Cała treść artykułu w formacie <b>HTML</b>...",
+  "faq_json_ld": {{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {{
+        "@type": "Question",
+        "name": "Pierwsze pytanie?",
+        "acceptedAnswer": {{
+          "@type": "Answer",
+          "text": "Odpowiedź na pierwsze pytanie."
+        }}
+      }},
+      {{
+        "@type": "Question",
+        "name": "Drugie pytanie?",
+        "acceptedAnswer": {{
+          "@type": "Answer",
+          "text": "Odpowiedź na drugie pytanie."
+        }}
+      }}
+    ]
+  }}
+}}
 """
-    body_html = ""
-    mode = "master_prompt"
+    
+    fallback_content = {
+        "title": f"Analiza tematu: {inspiration}",
+        "meta_description": "W tym artykule przyglądamy się bliżej zagadnieniu, analizując jego różne aspekty w kontekście studium przypadku.",
+        "html_content": f"<h1>Analiza tematu: {inspiration}</h1><p>Niestety, automatyczne generowanie treści nie powiodło się. Prosimy spróbować ponownie później. Ten artykuł jest jedynie szablonem zastępczym.</p>",
+        "faq_json_ld": {}
+    }
 
     for attempt in range(2):
         try:
-            if GEMINI_API_KEY == "WPROWADZ_KLUCZ_LOKALNIE":
-                raise RuntimeError("Brak skonfigurowanego klucza GEMINI_API_KEY.")
-            
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel(GEMINI_MODEL)
-
             print(f"Wysyłanie zapytania do Gemini z pełnym kontekstem... (próba {attempt + 1})")
+            model = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                safety_settings=safety_settings,
+                generation_config=generation_config,
+            )
             response = model.generate_content(final_prompt)
             
-            raw_text = response.text
-            # Proste czyszczenie: usuwa ```html na początku i ``` na końcu
-            body_html = re.sub(r'^```html\s*|\s*```$', '', raw_text, flags=re.MULTILINE).strip()
+            # Czasem Gemini zwraca JSON wewnątrz bloku markdown, trzeba to wyczyścić
+            cleaned_response_text = re.sub(r'^```json\s*|\s*```$', '', response.text.strip(), flags=re.MULTILINE)
             
-            if body_html.strip():
-                break 
-        except Exception as e:
-            if attempt == 0:
-                print(f"[BŁĄD API] Próba 1 nie powiodła się: {e}. Ponawiam za {RETRY_DELAY_SECONDS}s...")
-                time.sleep(RETRY_DELAY_SECONDS)
+            parsed_json = json.loads(cleaned_response_text)
+            
+            # Walidacja kluczy
+            required_keys = ["title", "meta_description", "html_content", "faq_json_ld"]
+            if all(key in parsed_json for key in required_keys):
+                return parsed_json
             else:
-                print(f"[BŁĄD KRYTYCZNY] Próba 2 nie powiodła się: {e}. Przełączam na fallback.")
-                mode = "fallback"
-                body_html = ""
+                print("Odpowiedź JSON nie zawiera wszystkich wymaganych kluczy.")
+                
+        except Exception as e:
+            print(f"Błąd podczas generowania treści (próba {attempt + 1}): {e}")
+            if attempt < 1:
+                print("Ponawiam próbę za 15 sekund...")
+                time.sleep(15)
 
-    if not body_html:
-        mode = "fallback"
-        print("Generowanie treści w trybie awaryjnym (fallback)...")
-        paragraphs = [
-            f"<h2>Wprowadzenie</h2><p><strong>Rdzeń zagadnienia:</strong> {topic} – syntetyczne wprowadzenie wyjaśniające dlaczego temat ma znaczenie w analizie relacyjno-psychologicznej.</p>",
-            "<h2>Mechanizmy Psychologiczne</h2><p>Opis wewnętrznych procesów: regulacja emocji, dysonans, obrona poznawcza – dobierz adekwatnie.</p>",
-            "<h2>Konsekwencje i Ryzyka</h2><p>Skutki krótkoterminowe i długoterminowe dla jednostki oraz relacji.</p>",
-            "<h2>Synteza i Pytania</h2><p>Podsumowanie napięcia kluczowego + 2–3 pytania: Co weryfikuję faktami? Jakie wzorce powtarzam? Jakie sygnały ignoruję?</p>",
-        ]
-        body_html = "\n".join(paragraphs)
+    print("Nie udało się wygenerować treści po 2 próbach. Używam treści zastępczej.")
+    return fallback_content
 
-    plain_full = ' '.join(BeautifulSoup(body_html, 'html.parser').stripped_strings)
-    word_count = len(plain_full.split())
+# === KROK 6: Reszta Skryptu ===
+
+def build_post_html(template_content: str, data: dict, campaign: str) -> str:
+    """Wypełnia szablon HTML danymi artykułu."""
+    now = datetime.datetime.now()
     
-    return {
-        "title": topic,
-        "description": (plain_full[:155] + '…') if len(plain_full) > 155 else plain_full,
-        "html_content": body_html,
-        "mode": mode,
-        "word_count": word_count
-    }
+    # Ustawienie polskiej lokalizacji dla nazw miesięcy
+    import locale
+    try:
+        locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
+        human_date = now.strftime('%d %B %Y')
+    except locale.Error:
+        print("Nie można ustawić polskiej lokalizacji. Data będzie w domyślnym formacie.")
+        human_date = now.strftime('%d %B %Y')
 
+    html = template_content.replace("{{TYTUL}}", data['title'])
+    html = html.replace("{{DATA_LUDZKA}}", human_date)
+    html = html.replace("{{KATEGORIA}}", campaign)
+    html = html.replace("{{TRESC_ARTYKULU}}", data['html_content'])
+    html = html.replace("{{META_OPIS}}", data['meta_description'])
+    
+    faq_script = f'<script type="application/ld+json">{json.dumps(data["faq_json_ld"], indent=2, ensure_ascii=False)}</script>'
+    html = html.replace("{{FAQ_JSON_LD}}", faq_script)
+    
+    return html
 
-# === KROK 6: Pozostałe Funkcje i Główny Przepływ ===
-
-# --- Funkcje pomocnicze (bez zmian w logice) ---
-
-def safe_write(path: Path, content: str, *, binary: bool = False, append: bool = False):
-    if DRY_RUN:
-        print(f"[DRY RUN] Zapis do pliku {path} pominięty.")
+def insert_card_in_index(file_path: Path, title: str, description: str, link: str, campaign: str):
+    """Dodaje nową kartę artykułu do pliku index.html."""
+    if not file_path.exists():
+        print(f"Plik {file_path} nie istnieje. Nie można dodać karty.")
         return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    mode = 'ab' if binary else 'a' if append else 'w'
-    encoding = None if binary else 'utf-8'
-    with open(path, mode, encoding=encoding) as f:
-        f.write(content)
 
-def ensure_unique_title(title: str) -> str:
-    try:
-        with open(TITLES_INDEX_FILE, "r+", encoding="utf-8") as f:
-            titles = {line.strip() for line in f}
-            original_title = title
-            counter = 2
-            while title in titles:
-                title = f"{original_title} (cz. {counter})"
-                counter += 1
-            f.write(title + "\n")
-            return title
-    except FileNotFoundError:
-        with open(TITLES_INDEX_FILE, "w", encoding="utf-8") as f:
-            f.write(title + "\n")
-        return title
-
-def generate_faq(topic: str, body_plain: str) -> list[dict]:
-    if GEMINI_API_KEY == "WPROWADZ_KLUCZ_LOKALNIE":
-        return [{"question": "Jakie są kluczowe aspekty tego tematu?", "answer": "Artykuł szczegółowo analizuje temat, koncentrując się na jego mechanizmach i konsekwencjach."}]
-    prompt = f"""Na podstawie poniższego artykułu na temat "{topic}", wygeneruj 3-5 pytań i odpowiedzi w formacie FAQ. Odpowiedzi powinny być zwięzłe i merytoryczne. Format wyjściowy: JSON jako lista obiektów [{{ "question": "...", "answer": "..." }}]. Nie dodawaj żadnego tekstu poza JSON. Fragment artykułu:\n{body_plain[:2000]}"""
-    for _ in range(2):
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel(GEMINI_MODEL)
-            response = model.generate_content(prompt)
-            match = re.search(r'\[.*\]', response.text, re.DOTALL)
-            if match:
-                return json.loads(match.group(0))
-        except Exception as e:
-            print(f"[BŁĄD] Nie udało się wygenerować FAQ: {e}")
-    return []
-
-def select_related_posts(current_slug: str, all_posts: List[Dict]) -> list[dict]:
-    other_posts = [p for p in all_posts if p.get('slug') != current_slug]
-    return random.sample(other_posts, min(len(other_posts), 3))
-
-def build_post_html(data: dict, date: dt.date, slug: str) -> str:
-    try:
-        template_str = TEMPLATE_FILE.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return f"<h1>{data['title']}</h1><p>Błąd: Brak szablonu.</p>"
-
-    faq_html = ""
-    if data.get('faq'):
-        faq_items_html = "".join([f"""<div class="py-4"><dt class="font-semibold text-text">{item['question']}</dt><dd class="mt-2 text-text/80">{item['answer']}</dd></div>""" for item in data['faq']])
-        if faq_items_html:
-            faq_html = f"""<section class="mt-12 pt-8 border-t border-border/60 not-prose" id="faq"><h2 class="text-xl font-semibold mb-4">Najczęściej zadawane pytania (FAQ)</h2><dl class="divide-y divide-border/60">{faq_items_html}</dl></section>"""
-
-    related_html = ""
-    if data.get('related'):
-        related_items_html = "".join([f"<li><a class='text-accent hover:underline text-sm' href='../{p['slug']}.html'>{p['title']}</a></li>" for p in data['related']])
-        if related_items_html:
-            related_html = f"""<section class='mt-12 not-prose' id='related'><h2 class='text-lg font-semibold mb-4'>Powiązane analizy</h2><ul class='space-y-2'>{related_items_html}</ul></section>"""
-
-    return (template_str
-            .replace("{{TYTUL}}", data.get('title', 'Brak tytułu'))
-            .replace("{{OPIS}}", data.get('description', 'Brak opisu.'))
-            .replace("{{KATEGORIA}}", data.get('category', 'Artykuły'))
-            .replace("{{KANONICAL}}", f"{BASE_URL}/pages/{slug}.html")
-            .replace("{{DATA}}", date.strftime("%Y-%m-%d"))
-            .replace("{{DATA_LUDZKA}}", date.strftime('%d %B %Y'))
-            .replace("{{TRESC_HTML}}", data.get('html_content', '<p>Brak treści.</p>'))
-            .replace("{{FAQ_HTML}}", faq_html)
-            .replace("{{POWIAZANE_POSTY_HTML}}", related_html)
-    )
-
-def insert_card_in_index(slug: str, data: dict, date: dt.date, campaign_name: str) -> None:
-    try:
-        index_content = INDEX_FILE.read_text(encoding="utf-8")
-        soup = BeautifulSoup(index_content, 'html.parser')
-        posts_container = soup.find(id="posts-container")
-        if not posts_container:
-            print("[OSTRZEŻENIE] Nie znaleziono #posts-container w index.html.")
-            return
-
-        card_html = f"""<article class="group relative flex flex-col rounded-xl border border-border/70 bg-surface/90 p-6 shadow-sm hover:shadow-lift hover:-translate-y-1 transition-all duration-300" itemscope="True" itemtype="https://schema.org/BlogPosting">
-<h3 class="mt-4 text-lg font-semibold leading-snug group-hover:text-accent transition-colors" itemprop="headline">{data['title']}</h3>
-<time class="mt-2 text-xs text-text/60" datetime="{date.strftime('%Y-%m-%d')}" itemprop="datePublished">Opublikowano: {date.strftime('%d %B %Y')}</time>
-<p class="mt-4 text-sm leading-relaxed text-text/80 line-clamp-5" itemprop="description">{data['description']}</p>
-<a aria-label="Czytaj dalej: {data['title']}" class="mt-5 inline-flex items-center text-sm font-medium text-accent hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60" href="pages/{slug}.html" itemprop="url">Czytaj dalej →</a>
-<meta content="{SITE_NAME}" itemprop="author"/>
-</article>"""
-        new_card_soup = BeautifulSoup(card_html, 'html.parser')
-        posts_container.insert(0, new_card_soup)
-
-        all_cards = posts_container.find_all("article", recursive=False)
-        if len(all_cards) > MAX_INDEX_CARDS:
-            for card in all_cards[MAX_INDEX_CARDS:]:
-                card.decompose()
+    with open(file_path, 'r+', encoding='utf-8') as f:
+        soup = BeautifulSoup(f, 'html.parser')
         
-        safe_write(INDEX_FILE, str(soup.prettify()))
-    except Exception as e:
-        print(f"[BŁĄD] Nie udało się zaktualizować pliku index.html: {e}")
-
-def collect_all_posts() -> list[dict]:
-    posts = []
-    if not PAGES_DIR.exists(): return []
-    for f in PAGES_DIR.glob("*.html"):
+        grid = soup.find('div', class_='grid')
+        if not grid:
+            print("Nie znaleziono siatki 'grid' w pliku index.html.")
+            return
+            
+        # Tworzenie nowej karty
+        new_card = soup.new_tag('div', **{'class': 'card'})
+        
+        # Ustawienie polskiej lokalizacji dla nazw miesięcy
+        import locale
         try:
-            content = f.read_text(encoding="utf-8")
-            soup = BeautifulSoup(content, 'html.parser')
-            title = soup.title.string if soup.title else f.stem
-            description_tag = soup.find("meta", attrs={"name": "description"})
-            description = description_tag['content'] if description_tag else ""
-            match = re.search(r'-(\d{8})$', f.stem)
-            date_str = match.group(1) if match else "19700101"
-            post_date = dt.datetime.strptime(date_str, "%Y%m%d").strftime("%Y-%m-%d")
-            posts.append({"slug": f.stem, "title": title, "description": description, "date": post_date})
-        except Exception as e:
-            print(f"[OSTRZEŻENIE] Nie można przetworzyć pliku {f.name}: {e}")
-    return sorted(posts, key=lambda p: p['date'], reverse=True)
+            locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
+            human_date = datetime.datetime.now().strftime('%d %B %Y')
+        except locale.Error:
+            print("Nie można ustawić polskiej lokalizacji. Data będzie w domyślnym formacie.")
+            human_date = datetime.datetime.now().strftime('%d %B %Y')
 
-def generate_full_spis(posts: list[dict]) -> None:
-    # Ta funkcja może pozostać w dużej mierze bez zmian, ponieważ operuje na liście postów
-    pass # Implementacja jest długa i nie wymaga zmian logicznych
+        card_content = f"""
+            <div class="card-category">{campaign}</div>
+            <h2><a href="{link}">{title}</a></h2>
+            <p>{description}</p>
+            <div class="card-footer">
+                <a href="{link}" class="read-more">Czytaj dalej...</a>
+                <span>{human_date}</span>
+            </div>
+        """
+        new_card.append(BeautifulSoup(card_content, 'html.parser'))
+        
+        # Wstawienie nowej karty na początku siatki
+        grid.insert(0, new_card)
+        
+        f.seek(0)
+        f.write(str(soup.prettify()))
+        f.truncate()
 
-def generate_sitemap(posts: list[dict]) -> None:
-    urls = [f"<url><loc>{BASE_URL}/pages/{p['slug']}.html</loc></url>" for p in posts]
-    xml = f"<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">{''.join(urls)}</urlset>"
-    safe_write(SITEMAP_FILE, xml)
+def update_sitemap_and_rss(new_post_url: str, title: str, description: str):
+    """Aktualizuje sitemap.xml i rss.xml."""
+    now_iso = datetime.datetime.now().isoformat()
+    
+    # Sitemap
+    if SITEMAP_FILE.exists():
+        with open(SITEMAP_FILE, 'r+', encoding='utf-8') as f:
+            content = f.read()
+            if new_post_url not in content:
+                new_entry = f"""
+<url>
+  <loc>{new_post_url}</loc>
+  <lastmod>{now_iso}</lastmod>
+  <priority>0.80</priority>
+</url>
+"""
+                content = content.replace('</urlset>', f'{new_entry}</urlset>')
+                f.seek(0)
+                f.write(content)
+                f.truncate()
 
-def generate_rss_feed(posts: list[dict]) -> None:
-    items = []
-    for p in posts[:20]:
-        items.append(f"<item><title>{p['title']}</title><link>{BASE_URL}/pages/{p['slug']}.html</link><description>{p['description']}</description><pubDate>{p['date']}</pubDate></item>")
-    xml = f"<rss version=\"2.0\"><channel><title>{SITE_NAME}</title><link>{BASE_URL}</link><description>...</description>{''.join(items)}</channel></rss>"
-    safe_write(FEED_FILE, xml)
+    # RSS
+    if RSS_FILE.exists():
+        with open(RSS_FILE, 'r+', encoding='utf-8') as f:
+            content = f.read()
+            if f'<link>{new_post_url}</link>' not in content:
+                new_item = f"""
+    <item>
+      <title>{title}</title>
+      <link>{new_post_url}</link>
+      <description>{description}</description>
+      <pubDate>{now_iso}</pubDate>
+    </item>
+"""
+                content = content.replace('</channel>', f'{new_item}\n  </channel>')
+                f.seek(0)
+                f.write(content)
+                f.truncate()
 
-def git_commit_and_push(commit_message: str):
-    if os.getenv("DISABLE_GIT", "0") == "1":
+def update_spis_tresci(new_post_url: str, title: str):
+    """Aktualizuje plik spisu treści."""
+    if not SPIS_TRESCI_FILE.exists():
         return
+    with open(SPIS_TRESCI_FILE, 'r+', encoding='utf-8') as f:
+        soup = BeautifulSoup(f, 'html.parser')
+        
+        main_list = soup.find('ul')
+        if main_list:
+            new_li = soup.new_tag('li')
+            new_a = soup.new_tag('a', href=new_post_url.replace(str(REPO_PATH), '..'))
+            new_a.string = title
+            new_li.append(new_a)
+            main_list.insert(0, new_li)
+            
+            f.seek(0)
+            f.write(str(soup.prettify()))
+            f.truncate()
+
+def commit_and_push_changes(repo_path: Path, commit_message: str):
+    """Wprowadza zmiany do repozytorium Git i wysyła je na serwer."""
     try:
-        repo = Repo(REPO_PATH)
+        repo = Repo(repo_path)
         repo.git.add(all=True)
+        
         if repo.is_dirty(untracked_files=True):
             repo.index.commit(commit_message)
             print("Wprowadzono zmiany do lokalnego repozytorium.")
-            if os.getenv("GIT_PUSH", "1") == "1":
-                origin = repo.remote(name='origin')
-                origin.push()
-                print("Wysłano zmiany do zdalnego repozytorium.")
+            
+            origin = repo.remote(name='origin')
+            origin.push()
+            print("Wysłano zmiany do zdalnego repozytorium.")
+        else:
+            print("Brak zmian do wprowadzenia.")
+            
     except Exception as e:
-        print(f"[BŁĄD GIT] Operacja nie powiodła się: {e}")
+        print(f"Błąd podczas operacji Git: {e}")
 
-# --- Główna funkcja `main` ---
 def main():
-    """
-    Główny przepływ sterujący skryptem.
-    """
+    """Główna funkcja sterująca skryptem."""
+    config = load_config_from_excel(CONFIG_FILE)
+    if not config:
+        return
+
+    inspiration, campaign = pick_inspiration(config)
+    if not inspiration:
+        print("Nie udało się wybrać inspiracji na dziś. Kończę pracę.")
+        return
+
+    master_prompt = build_master_prompt(config)
+    
+    article_data = generate_creative_article(inspiration, master_prompt)
+    
+    if not article_data or not article_data.get("title"):
+        print("Nie udało się wygenerować danych artykułu. Kończę pracę.")
+        return
+
+    # Zapisanie użytej inspiracji
+    save_used_topic(inspiration)
+
+    # Przygotowanie nazwy pliku i URL
+    slug = slugify(article_data['title'])
+    date_stamp = datetime.datetime.now().strftime('%Y%m%d')
+    filename = f"{slug}-{date_stamp}.html"
+    filepath = PAGES_DIR / filename
+    post_url = f"https://trueresults.online/pages/{filename}"
+
+    # Budowanie i zapis pliku HTML
     try:
-        # 1. Wczytaj konfigurację
-        config = load_config_from_excel(CONFIG_FILE)
+        with open(POST_TEMPLATE_FILE, 'r', encoding='utf-8') as f:
+            template_content = f.read()
         
-        # 2. Zbuduj Master Prompt
-        master_prompt = build_master_prompt(config)
+        post_html = build_post_html(template_content, article_data, campaign)
         
-        # 3. Wybierz kampanię i temat
-        today = dt.date.today()
-        campaign_name = get_current_campaign(config['campaign_topics'], today)
-        topic = pick_topic(config['campaign_topics'], campaign_name)
-        
-        print(f"Wybrano temat '{topic}' z kampanii '{campaign_name}'.")
-        
-        # 4. Wygeneruj artykuł
-        article_data = generate_article(topic, master_prompt)
-        
-        # 5. Reszta procesu
-        unique_title = ensure_unique_title(article_data['title'])
-        article_data['title'] = unique_title
-        slug = slugify(unique_title) + f"-{today.strftime('%Y%m%d')}"
-        
-        all_posts = collect_all_posts()
-        article_data['faq'] = generate_faq(unique_title, ' '.join(BeautifulSoup(article_data['html_content'], 'html.parser').stripped_strings))
-        article_data['related'] = select_related_posts(slug, all_posts)
-        article_data['category'] = campaign_name # Użyj nazwy kampanii jako kategorii
-        
-        html_content = build_post_html(article_data, today, slug)
-        
-        PAGES_DIR.mkdir(exist_ok=True)
-        post_path = PAGES_DIR / f"{slug}.html"
-        safe_write(post_path, html_content)
-        
-        insert_card_in_index(slug, article_data, today, campaign_name)
-        
-        # Aktualizacja pozostałych plików
-        all_posts_updated = collect_all_posts()
-        generate_full_spis(all_posts_updated)
-        generate_sitemap(all_posts_updated)
-        generate_rss_feed(all_posts_updated)
-        
-        # Logowanie
-        log_entry = (
-            f"DATA={dt.datetime.now().isoformat()} | KAMPANIA={campaign_name} | TRYB={article_data.get('mode')} | "
-            f"TEMAT={topic} | SLUG={slug} | TYTUL={article_data.get('title')} | SŁOWA={article_data.get('word_count', 0)}\n"
-        )
-        LOG_DIR.mkdir(exist_ok=True)
-        safe_write(LOG_FILE, log_entry, append=True)
-        
-        print(f"Dodano wpis: {article_data['title']} -> {slug}.html (tryb={article_data.get('mode')})")
+        PAGES_DIR.mkdir(parents=True, exist_ok=True)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(post_html)
+        print(f"Dodano wpis: {article_data['title']} -> {filename}")
 
-        # Commit
-        commit_message = f"AUTO: Nowy wpis {today.strftime('%Y-%m-%d')} - {unique_title[:50]}"
-        git_commit_and_push(commit_message)
-
+    except FileNotFoundError:
+        print(f"Błąd: Nie znaleziono pliku szablonu {POST_TEMPLATE_FILE}")
+        return
     except Exception as e:
-        print(f"[BŁĄD KRYTYCZNY W MAIN] {e}")
-        # Można dodać logowanie błędu do pliku
-        
+        print(f"Błąd podczas tworzenia pliku HTML: {e}")
+        return
+
+    # Aktualizacja plików głównych
+    insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", campaign)
+    update_sitemap_and_rss(post_url, article_data['title'], article_data['meta_description'])
+    update_spis_tresci(f"pages/{filename}", article_data['title'])
+
+    # Commit i push
+    commit_message = f"Automatyczny wpis: {article_data['title']}"
+    commit_and_push_changes(REPO_PATH, commit_message)
+
 if __name__ == "__main__":
-    try:
-        import locale
-        locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
-    except locale.Error:
-        print("[OSTRZEŻENIE] Nie można ustawić polskiego locale. Daty mogą być po angielsku.")
     main()
