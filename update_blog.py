@@ -259,18 +259,22 @@ def build_post_html(template_content: str, data: dict, campaign: str) -> str:
     import locale
     try:
         locale.setlocale(locale.LC_TIME, 'pl_PL.UTF-8')
-        human_date = now.strftime('%d %B %Y')
     except locale.Error:
         print("Nie można ustawić polskiej lokalizacji. Data będzie w domyślnym formacie.")
-        human_date = now.strftime('%d %B %Y')
-
-    html = template_content.replace("{{TYTUL}}", data['title'])
-    html = html.replace("{{DATA_LUDZKA}}", human_date)
-    html = html.replace("{{KATEGORIA}}", campaign)
-    html = html.replace("{{TRESC_ARTYKULU}}", data['html_content'])
-    html = html.replace("{{META_OPIS}}", data['meta_description'])
     
-    faq_script = f'<script type="application/ld+json">{json.dumps(data["faq_json_ld"], indent=2, ensure_ascii=False)}</script>'
+    human_date = now.strftime('%d %B %Y')
+
+    html = template_content.replace("{{TYTUL}}", data.get('title', 'Brak tytułu'))
+    html = html.replace("{{DATA_LUDZKA}}", human_date)
+    html = html.replace("{{KATEGORIA}}", campaign or "Ogólna")
+    html = html.replace("{{TRESC_ARTYKULU}}", data.get('html_content', '<p>Brak treści.</p>'))
+    html = html.replace("{{META_OPIS}}", data.get('meta_description', 'Brak opisu.'))
+    
+    faq_data = data.get("faq_json_ld", {})
+    if faq_data:
+        faq_script = f'<script type="application/ld+json">{json.dumps(faq_data, indent=2, ensure_ascii=False)}</script>'
+    else:
+        faq_script = ""
     html = html.replace("{{FAQ_JSON_LD}}", faq_script)
     
     return html
