@@ -319,14 +319,13 @@ def insert_card_in_index(slug: str, data: dict, date: dt.date, campaign_name: st
             return
 
         # Nowy, profesjonalny szablon karty
-        card_html = f"""
-<article class="flex flex-col gap-2 rounded-lg border border-border bg-surface shadow-lift transition-transform duration-300 hover:-translate-y-1 focus-within:ring-2 focus-within:ring-accent/80">
-    <a href="pages/{slug}.html" class="block p-6" aria-label="Przeczytaj więcej o {data['title']}">
-        <h3 class="font-semibold text-base leading-snug tracking-tight text-text/90 hover:text-accent transition-colors">{data['title']}</h3>
-        <p class="mt-3 text-xs text-text/60">{date.strftime('%d %B %Y')} &bull; {campaign_name}</p>
-    </a>
-</article>
-"""
+        card_html = f"""<article class="group relative flex flex-col rounded-xl border border-border/70 bg-surface/90 p-6 shadow-sm hover:shadow-lift hover:-translate-y-1 transition-all duration-300" itemscope="True" itemtype="https://schema.org/BlogPosting">
+<h3 class="mt-4 text-lg font-semibold leading-snug group-hover:text-accent transition-colors" itemprop="headline">{data['title']}</h3>
+<time class="mt-2 text-xs text-text/60" datetime="{date.strftime('%Y-%m-%d')}" itemprop="datePublished">Opublikowano: {date.strftime('%d %B %Y')}</time>
+<p class="mt-4 text-sm leading-relaxed text-text/80 line-clamp-5" itemprop="description">{data['description']}</p>
+<a aria-label="Czytaj dalej: {data['title']}" class="mt-5 inline-flex items-center text-sm font-medium text-accent hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60" href="pages/{slug}.html" itemprop="url">Czytaj dalej →</a>
+<meta content="{SITE_NAME}" itemprop="author"/>
+</article>"""
         new_card_soup = BeautifulSoup(card_html, 'html.parser')
         
         # Wstaw nową kartę na początek kontenera
