@@ -21,6 +21,7 @@ from bs4 import BeautifulSoup
 from git import Repo
 from slugify import slugify
 import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 
 # Konfiguracja ścieżek
@@ -38,6 +39,8 @@ SPIS_TRESCI_FILE = REPO_PATH / "spis.html"
 # Wczytanie zmiennych środowiskowych
 load_dotenv(REPO_PATH / ".env")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
 
 # Konfiguracja Gemini
 genai.configure(api_key=GEMINI_API_KEY)
@@ -184,7 +187,81 @@ def generate_offline_content(inspiration: str) -> str:
     ]
     return "\n".join(sections)
 
-# === KROK 6: Główny, Kreatywny Silnik Generowania Treści ===
+# === KROK 6: Funkcja Generowania z Groq API ===
+def generate_with_groq(inspiration: str, master_prompt: str) -> dict:
+    """Generuje artykuł używając Groq API jako alternatywy dla Gemini."""
+    print("🦙 Próbuję generować treść z Groq API...")
+    
+    final_prompt = f"""{master_prompt}
+
+Twoim dzisiejszym zadaniem jest napisanie artykułu inspirowanego poniższą frazą.
+
+INSPIRACJA: "{inspiration}"
+
+Twoje zadania:
+1.  **Wymyśl Tytuł:** Stwórz kreatywny, intrygujący i unikalny tytuł dla artykułu, który nawiązuje do inspiracji i studium przypadku.
+2.  **Napisz Artykuł:** Napisz głęboki, analityczny artykuł. Masz pełną swobodę co do jego struktury. Możesz używać nagłówków, list, cytatów. Artykuł musi być napisany w formacie HTML.
+3.  **Wygeneruj Meta Opis:** Stwórz krótki (150-160 znaków) meta opis, który jest esencją artykułu i zachęca do kliknięcia.
+4.  **Stwórz Sekcję FAQ:** Przygotuj 3-4 pytania i odpowiedzi w formacie JSON-LD, które rozwijają kluczowe aspekty artykułu.
+
+Całość zwróć jako pojedynczy obiekt JSON, bez żadnych dodatkowych znaków czy formatowania markdown.
+
+Struktura JSON-a:
+{{
+  "title": "Twój wymyślony, kreatywny tytuł",
+  "meta_description": "Twój wygenerowany meta opis (150-160 znaków).",
+  "html_content": "<h1>Twój Tytuł</h1><p>Cała treść artykułu w formacie <b>HTML</b>...",
+  "faq_json_ld": {{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {{
+        "@type": "Question",
+        "name": "Pierwsze pytanie?",
+        "acceptedAnswer": {{
+          "@type": "Answer",
+          "text": "Odpowiedź na pierwsze pytanie."
+        }}
+      }}
+    ]
+  }}
+}}
+"""
+
+    try:
+        client = Groq(api_key=GROQ_API_KEY)
+        
+        completion = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": "Jesteś ekspertem w dziedzinie psychologii i analizy społecznej. Generujesz tylko poprawne JSON-y bez dodatkowych formatowań."},
+                {"role": "user", "content": final_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=4000,
+            top_p=0.9,
+            response_format={"type": "json_object"}
+        )
+        
+        response_text = completion.choices[0].message.content
+        
+        # Parsowanie JSON
+        parsed_json = json.loads(response_text)
+        
+        # Walidacja kluczy
+        required_keys = ["title", "meta_description", "html_content", "faq_json_ld"]
+        if all(key in parsed_json for key in required_keys):
+            print("✅ Groq API: Artykuł wygenerowany pomyślnie!")
+            return parsed_json
+        else:
+            print("❌ Groq API: Odpowiedź nie zawiera wszystkich wymaganych kluczy.")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Groq API Error: {e}")
+        return None
+
+# === KROK 7: Główny, Kreatywny Silnik Generowania Treści ===
 def generate_creative_article(inspiration: str, master_prompt: str) -> dict:
     """Generuje kreatywny artykuł na podstawie inspiracji, zwracając JSON."""
     
@@ -239,9 +316,11 @@ Struktura JSON-a:
         "faq_json_ld": {}
     }
 
-    for attempt in range(3):
+    # FASE 1: Próby z Gemini API
+    print("🤖 Próbuję generować treść z Gemini API...")
+    for attempt in range(2):  # Zmniejszam liczbę prób Gemini, żeby szybciej przejść do Groq
         try:
-            print(f"Wysyłanie zapytania do Gemini z pełnym kontekstem... (próba {attempt + 1})")
+            print(f"   Wysyłanie zapytania do Gemini... (próba {attempt + 1}/2)")
             model = genai.GenerativeModel(
                 model_name="gemini-1.5-flash",
                 safety_settings=safety_settings,
@@ -257,18 +336,33 @@ Struktura JSON-a:
             # Walidacja kluczy
             required_keys = ["title", "meta_description", "html_content", "faq_json_ld"]
             if all(key in parsed_json for key in required_keys):
+                print("✅ Gemini API: Artykuł wygenerowany pomyślnie!")
                 return parsed_json
             else:
-                print("Odpowiedź JSON nie zawiera wszystkich wymaganych kluczy.")
+                print("❌ Gemini API: Odpowiedź nie zawiera wszystkich wymaganych kluczy.")
                 
         except Exception as e:
-            print(f"Błąd podczas generowania treści (próba {attempt + 1}): {e}")
-            if attempt < 2:
-                wait_time = 30 if attempt == 0 else 60
-                print(f"Ponawiam próbę za {wait_time} sekund...")
-                time.sleep(wait_time)
+            print(f"❌ Gemini API Error (próba {attempt + 1}): {e}")
+            if "429" in str(e) and "quota" in str(e).lower():
+                print("   🚫 Gemini API osiągnął limit quota. Przechodzę do Groq...")
+                break  # Natychmiast przejdź do Groq jeśli to błąd quota
+            elif attempt < 1:
+                print("   ⏳ Ponawiam próbę za 15 sekund...")
+                time.sleep(15)
 
-    print("Nie udało się wygenerować treści po 3 próbach. Używam treści zastępczej.")
+    # FASE 2: Próba z Groq API
+    if GROQ_API_KEY:
+        print("🔄 Gemini niedostępny, próbuję z Groq API...")
+        groq_result = generate_with_groq(inspiration, master_prompt)
+        if groq_result:
+            return groq_result
+        else:
+            print("❌ Groq API także nie powiódł się.")
+    else:
+        print("⚠️  Brak klucza Groq API w konfiguracji.")
+
+    # FASE 3: Fallback do treści offline
+    print("📝 Oba API niedostępne. Używam treści zastępczej.")
     return fallback_content
 
 # === KROK 6: Reszta Skryptu ===
@@ -497,10 +591,20 @@ def main():
         print("❌ Nie udało się wygenerować danych artykułu. Kończę pracę.")
         return
     
-    # Sprawdzanie czy to treść generowana przez AI czy fallback
-    is_ai_content = "trybie offline" not in article_data.get("html_content", "")
-    status_icon = "🤖" if is_ai_content else "📝"
-    content_type = "AI" if is_ai_content else "Offline"
+    # Sprawdzanie typu treści i źródła
+    is_offline = "trybie offline" in article_data.get("html_content", "")
+    content_length = len(article_data.get("html_content", ""))
+    
+    if is_offline:
+        status_icon = "📝"
+        content_type = "Offline Fallback"
+    elif content_length > 3000:  # Groq zwykle generuje dłuższe treści
+        status_icon = "🦙"
+        content_type = "Groq API"
+    else:
+        status_icon = "🤖"
+        content_type = "Gemini API"
+    
     print(f"{status_icon} Wygenerowano artykuł ({content_type}): '{article_data['title']}'")
     print()
 
