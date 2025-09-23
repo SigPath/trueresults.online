@@ -146,6 +146,39 @@ def build_master_prompt_from_config(config_file_path: Path) -> str:
         print(f"⚠️  Błąd odczytu master promptu z Excela: {e}")
         return "Jesteś ekspertem psychologiem i analitykiem. Twórz głębokie, analityczne artykuły w języku polskim."
 
+# === KROK 2b: System Bezpieczeństwa Plików ===
+def check_file_safe_for_updates(file_path: Path) -> bool:
+    """
+    Sprawdza czy plik jest bezpieczny do automatycznych aktualizacji.
+    Zwraca False jeśli plik wygląda na ręcznie edytowany.
+    """
+    if not file_path.exists():
+        return True  # Nieistniejący plik można utworzyć
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Proste heurystyki wykrywające ręczne edycje
+        suspicious_patterns = [
+            '<!DOCTYPE html>\n\n<!DOCTYPE html>',  # Duplikacja
+            '<html><html>',  # Zagnieżdżone tagi
+        ]
+        
+        for pattern in suspicious_patterns:
+            if pattern in content:
+                return False  # Plik wydaje się zepsuty
+        
+        # Jeśli plik ma profesjonalną strukturę z załącznika - nie ruszać
+        if 'True Results Online – Prawda. Analiza. Zrozumienie.' in content:
+            if 'Przebijanie się przez szum dzięki rygorystycznym' in content:
+                return False  # To jest dobra wersja z załącznika
+        
+        return True  # Plik wygląda na bezpieczny do modyfikacji
+        
+    except Exception:
+        return False  # W razie wątpliwości - nie ruszać
+
 # === KROK 3: Zaktualizowana Logika Wyboru Tematu ===
 def get_used_titles():
     """Wczytuje użyte tytuły artykułów z pliku historii."""
@@ -686,12 +719,28 @@ def main():
         print(f"Błąd podczas tworzenia pliku HTML: {e}")
         return
 
-    # Aktualizacja plików głównych
+    # Aktualizacja plików głównych (OCHRONA przed nadpisaniem)
     print("🔄 Aktualizuję pliki główne...")
-    insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", topic_package['campaign'])
+    
+    # BEZPIECZEŃSTWO: Sprawdzamy czy pliki nie zostały ręcznie edytowane
+    index_safe = check_file_safe_for_updates(INDEX_FILE)
+    spis_safe = check_file_safe_for_updates(SPIS_TRESCI_FILE)
+    
+    if index_safe:
+        insert_card_in_index(INDEX_FILE, article_data['title'], article_data['meta_description'], f"pages/{filename}", topic_package['campaign'])
+        print("✅ Zaktualizowano: index.html")
+    else:
+        print("⚠️  Pominięto aktualizację index.html (plik ręcznie edytowany)")
+    
+    if spis_safe:
+        update_spis_tresci(f"pages/{filename}", article_data['title'], article_data['meta_description'])
+        print("✅ Zaktualizowano: spis.html")
+    else:
+        print("⚠️  Pominięto aktualizację spis.html (plik ręcznie edytowany)")
+        
+    # RSS i sitemap aktualizujemy zawsze (są bezpieczne)
     update_sitemap_and_rss(post_url, article_data['title'], article_data['meta_description'])
-    update_spis_tresci(f"pages/{filename}", article_data['title'], article_data['meta_description'])
-    print("✅ Zaktualizowano: index.html, sitemap.xml, rss.xml, spis.html")
+    print("✅ Zaktualizowano: sitemap.xml, rss.xml")
 
     # Commit i push
     commit_message = f"Automatyczny wpis: {article_data['title']}"
