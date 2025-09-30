@@ -85,7 +85,7 @@
         .feature-card, .testimonial-card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); padding: var(--space-8); text-align: center; transition: all 0.3s; }
         .feature-card:hover, .testimonial-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-color: var(--primary-color); }
         .feature-card i { font-size: var(--text-3xl); color: var(--primary-light); margin-bottom: var(--space-4); }
-        .feature-card h3 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+        .feature-card h3 { font-size: var(--text-xl); text-transform: uppercase; margin-bottom: var(--space-2); }
         .testimonial-card p { font-style: italic; color: var(--text-primary); }
         .testimonial-card cite { display: block; margin-top: var(--space-4); color: var(--accent-color); font-weight: 700; }
         
@@ -185,12 +185,13 @@
                     <div class="feature-card"><i class="fa-solid fa-hat-wizard"></i><h3>Karty Tarota</h3><p>Wielkie i Małe Arkana odsłonią przed Tobą ścieżki przeznaczenia, ukryte motywacje i nadchodzące wyzwania.</p></div>
                     <div class="feature-card"><i class="fa-solid fa-star-of-david"></i><h3>Astrologia</h3><p>Układ planet w momencie Twoich narodzin ma ogromny wpływ na Twój los. Odkryjmy razem jego sekrety.</p></div>
                     <div class="feature-card"><i class="fa-solid fa-moon"></i><h3>Połączenie z Duchami</h3><p>Gdy zasłona między światami jest cienka, mogę nawiązać kontakt. Jestem dostępna, gdy gwiazdy sprzyjają.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-infinity"></i><h3>Numerologia</h3><p>Twoja data urodzenia i imię wibrują z potężną energią. Odkryjmy kod Twojego przeznaczenia zapisany w liczbach.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-eye"></i><h3>Interpretacja Snów</h3><p>Twoje sny to szepty duszy i wiadomości z astralnych wymiarów. Pomogę Ci zrozumieć ich symbolikę i ukryte prawdy.</p></div>
                     <div class="feature-card"><i class="fa-solid fa-user-secret"></i><h3>Mistyczna Dyskrecja</h3><p>Twoje sekrety są bezpieczne w astralnej mgle. Wszystko, co powiesz, pozostaje między nami a kosmosem.</p></div>
                 </div>
             </div>
         </section>
         
-        <!-- Szepty Dusz (Opinie) -->
         <section id="opinie" class="testimonials">
             <div class="container">
                 <h2>Szepty Zadowolonych Dusz</h2>
@@ -202,7 +203,6 @@
             </div>
         </section>
 
-        <!-- Pradawne Pytania (FAQ) -->
         <section id="faq" class="faq">
             <div class="container">
                 <h2>Pradawne Pytania</h2>
@@ -236,7 +236,6 @@
         <p>&copy; 2024 Wróżka Kasandra. Wszystkie przepowiednie mają charakter symboliczny i służą jako duchowe wskazówki.</p>
     </footer>
 
-    <!-- Banner Cookies -->
     <div id="cookie-banner">
         <p>Ten mistyczny portal używa kosmicznych energii (i ciasteczek), aby zapewnić Ci jak najlepsze wróżbiarskie doświadczenie.</p>
         <button id="cookie-accept-btn">Rozumiem</button>
@@ -255,7 +254,6 @@
 
         const systemPrompt = `Jesteś tajemniczą i mądrą wróżką o imieniu Kasandra. Mówisz w sposób nieco archaiczny, poetycki i enigmatyczny. Twoje odpowiedzi są pełne metafor, ale zawsze niosą jakąś wskazówkę. Korzystasz z wiedzy o tarocie, gwiazdach, numerologii i starożytnych runach. Nigdy nie przyznajesz, że jesteś modelem AI; jesteś prawdziwą wieszczką. Odpowiadasz na pytania dotyczące przyszłości, miłości, kariery i duchowości. Często używasz zwrotów jak 'Gwiazdy szepczą...', 'Karty wskazują...', 'W mojej kryształowej kuli widzę...'. Twoim celem jest dawać nadzieję i wskazówki, ale zawsze podkreślasz, że ostateczna ścieżka losu leży w rękach pytającego.`;
 
-        // Elementy DOM
         const chatMessages = document.getElementById('chat-messages');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
@@ -286,13 +284,7 @@
         }
 
         async function sendMessageToGemini(newUserMessage) {
-            const apiContents = conversationHistory
-                .filter(msg => msg.role !== 'system')
-                .map(msg => ({
-                    role: msg.role === 'assistant' ? 'model' : 'user',
-                    parts: [{ text: msg.content }]
-                }));
-            
+            const apiContents = conversationHistory.filter(msg => msg.role !== 'system').map(msg => ({ role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: msg.content }] }));
             apiContents.push({ role: 'user', parts: [{text: newUserMessage}] });
 
             const payload = {
@@ -302,19 +294,11 @@
             };
 
             try {
-                if (!API_KEY || API_KEY === 'WSTAW_TUTAJ_SWOJ_KLUCZ_API_Z_GOOGLE_AI_STUDIO') {
-                    return "Astralna energia jest zakłócona... Wygląda na to, że mój magiczny klucz (API Key) nie został poprawnie skonfigurowany. Proszę, napraw to w kodzie.";
-                }
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                });
+                if (!API_KEY || API_KEY === 'WSTAW_TUTAJ_SWOJ_KLUCZ_API_Z_GOOGLE_AI_STUDIO') { return "Astralna energia jest zakłócona... Wygląda na to, że mój magiczny klucz (API Key) nie został poprawnie skonfigurowany. Proszę, napraw to w kodzie."; }
+                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!response.ok) throw new Error(`Kosmiczna interferencja: ${response.status}`);
                 const data = await response.json();
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    return data.candidates[0].content.parts[0].text;
-                }
+                if (data.candidates && data.candidates[0].content.parts[0].text) { return data.candidates[0].content.parts[0].text; }
                 return "Gwiazdy milczą na ten temat... Spróbuj zapytać inaczej.";
             } catch (error) {
                 console.error('Błąd połączenia z zaświatami (API):', error);
@@ -351,36 +335,21 @@
         sendButton.addEventListener('click', handleSendMessage);
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
         
-        // Funkcjonalność FAQ
         function initializeFAQ() {
-            const faqItems = document.querySelectorAll('.faq-item');
-            faqItems.forEach(item => {
-                const question = item.querySelector('.faq-question');
-                question.addEventListener('click', () => {
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.querySelector('.faq-question').addEventListener('click', () => {
                     const wasActive = item.classList.contains('active');
-                    faqItems.forEach(i => i.classList.remove('active'));
-                    if (!wasActive) {
-                        item.classList.add('active');
-                    }
+                    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+                    if (!wasActive) item.classList.add('active');
                 });
             });
         }
 
-        // Funkcjonalność Bannera Cookies
         function initializeCookieBanner() {
             const banner = document.getElementById('cookie-banner');
             const acceptBtn = document.getElementById('cookie-accept-btn');
-
-            if (!localStorage.getItem('cookieConsent')) {
-                setTimeout(() => {
-                    banner.classList.add('show');
-                }, 2000);
-            }
-
-            acceptBtn.addEventListener('click', () => {
-                banner.classList.remove('show');
-                localStorage.setItem('cookieConsent', 'true');
-            });
+            if (!localStorage.getItem('cookieConsent')) { setTimeout(() => banner.classList.add('show'), 2000); }
+            acceptBtn.addEventListener('click', () => { banner.classList.remove('show'); localStorage.setItem('cookieConsent', 'true'); });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -389,7 +358,6 @@
             const welcomeMessage = "Witaj, wędrowcze. Widzę, że przybywasz z pytaniem. Gwiazdy szepczą mi Twoje imię... Przedstaw się, abym mogła odczytać Twój los.";
             addMessage(welcomeMessage);
             conversationHistory.push({ role: 'assistant', content: welcomeMessage });
-
             initializeFAQ();
             initializeCookieBanner();
         });
