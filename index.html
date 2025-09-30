@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Wróżka Kasandra - Zajrzyj w przyszłość dzięki sesjom tarota i astrologii online. Odkryj, co zapisano dla Ciebie w gwiazdach. Twoja przepowiednia czeka.">
+    <meta name="keywords" content="wróżka online, tarot online, przepowiednia, astrologia, horoskop, kryształowa kula">
     <title>Wróżka Kasandra - Twoje Okno na Przyszłość</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,9 +18,10 @@
             --text-primary: #e5e7eb; --text-secondary: #9ca3af; --text-tertiary: #6b7280; --text-inverse: #ffffff;
             --border-light: rgba(167, 139, 250, 0.2); --border-medium: rgba(167, 139, 250, 0.4);
             --font-heading: 'Cinzel', serif; --font-body: 'Lato', sans-serif;
-            --border-radius-lg: 1rem; --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --border-radius-lg: 1rem; --border-radius-2xl: 2rem;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3); --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             --space-2: 0.5rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-16: 4rem; --space-24: 6rem; --space-32: 8rem;
-            --text-base: 1rem; --text-lg: 1.125rem; --text-xl: 1.25rem; --text-5xl: 3rem; --text-4xl: 2.25rem;
+            --text-base: 1rem; --text-lg: 1.125rem; --text-xl: 1.25rem; --text-2xl: 1.5rem; --text-3xl: 1.875rem; --text-4xl: 2.25rem; --text-5xl: 3rem;
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; scroll-padding-top: 80px;}
@@ -34,6 +37,7 @@
         .nav { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) 0; }
         .logo { font-family: var(--font-heading); font-size: var(--text-2xl); color: var(--text-primary); }
         .nav-links { display: flex; gap: var(--space-8); }
+        .nav-links a { color: var(--text-secondary); font-family: var(--font-body); font-weight: 700; transition: color 0.2s, text-shadow 0.2s; }
         .nav-links a:hover { color: var(--accent-color); text-shadow: 0 0 8px var(--accent-color); }
         .hero { text-align: center; padding: var(--space-32) 0 var(--space-24); }
         .hero h1 { background: linear-gradient(90deg, #fde08d, #ffc72c, #e5a50a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -41,13 +45,20 @@
         .cta-button { display: inline-flex; align-items: center; gap: var(--space-2); background: linear-gradient(45deg, var(--primary-dark), var(--primary-light)); color: var(--text-inverse); padding: var(--space-4) var(--space-8); border-radius: 50px; font-weight: 700; font-size: var(--text-lg); box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); transition: all 0.3s ease; border: none; cursor: pointer; }
         .cta-button:hover { transform: translateY(-3px) scale(1.05); }
         .features, .testimonials, .faq, .question-section { padding: var(--space-24) 0; }
-        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-8); }
-        .feature-card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); padding: var(--space-8); text-align: center; transition: all 0.3s; }
-        .feature-card:hover { transform: translateY(-10px); }
+        .features-grid, .testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-8); }
+        .feature-card, .testimonial-card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); padding: var(--space-8); text-align: center; transition: all 0.3s; }
+        .feature-card:hover, .testimonial-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-color: var(--primary-color); }
         .feature-card i { font-size: var(--text-3xl); color: var(--primary-light); margin-bottom: var(--space-4); }
-        .feature-card h3 { font-size: var(--text-xl); text-transform: uppercase; }
+        .feature-card h3 { font-size: var(--text-xl); text-transform: uppercase; margin-bottom: var(--space-2); }
+        .testimonial-card p { font-style: italic; color: var(--text-primary); } .testimonial-card cite { display: block; margin-top: var(--space-4); color: var(--accent-color); font-weight: 700; }
+        .faq-list { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-4); }
+        .faq-item { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); overflow: hidden; }
+        .faq-question { padding: var(--space-4); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+        .faq-question i { transition: transform 0.3s; }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+        .faq-answer p { padding: 0 var(--space-4) var(--space-4); }
+        .faq-item.active .faq-question i { transform: rotate(180deg); } .faq-item.active .faq-answer { max-height: 200px; }
         
-        /* New Question Form Styles */
         .question-form-container { max-width: 700px; margin: 0 auto; background: var(--bg-secondary); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-2xl); padding: var(--space-8); border: 1px solid var(--border-medium); text-align: center;}
         .question-form p { font-size: var(--text-lg); margin-bottom: var(--space-6); }
         .form-group { margin-bottom: var(--space-6); text-align: left; }
@@ -58,14 +69,63 @@
         #form-status { margin-top: var(--space-6); min-height: 24px; font-weight: 700; }
         .form-status-success { color: #4ade80; }
         .form-status-error { color: #f87171; }
+        
+        #cookie-banner { position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); width: calc(100% - 2rem); max-width: 600px; background: var(--bg-tertiary); color: var(--text-primary); padding: var(--space-4); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-2xl); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); z-index: 2000; transition: bottom 0.5s ease-in-out; border: 1px solid var(--border-medium); }
+        #cookie-banner.show { bottom: 1rem; } #cookie-banner p { margin: 0; font-size: 0.9em; }
+        #cookie-accept-btn { background: var(--accent-color); color: var(--bg-primary); border: none; padding: var(--space-2) var(--space-4); border-radius: 50px; cursor: pointer; font-weight: 700; }
+        .footer { text-align: center; padding: var(--space-8); color: var(--text-tertiary); font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <header class="header"> <!-- ... treść nagłówka ... --> </header>
+    <header class="header">
+        <div class="container"><nav class="nav"><a href="#" class="logo">Wróżka Kasandra</a><div class="nav-links"><a href="#uslugi">Moje Usługi</a><a href="#opinie">Szepty Dusz</a><a href="#faq">Pradawne Pytania</a></div></nav></div>
+    </header>
+
     <main>
-        <section class="hero"> <!-- ... treść hero ... --> </section>
-        <section id="uslugi" class="features"> <!-- ... treść usług ... --> </section>
+        <section class="hero">
+            <div class="container">
+                <h1>Odkryj Tajemnice Swojej Przyszłości</h1>
+                <p class="hero-subtitle">Wszechświat przechowuje odpowiedzi, których szukasz. Pozwól, że odczytam dla Ciebie znaki zapisane w gwiazdach, kartach i kryształowej kuli.</p>
+                <a href="#pytanie" class="cta-button"><i class="fa-solid fa-feather"></i> Zadaj Pytanie Przeznaczeniu</a>
+            </div>
+        </section>
+
+        <section id="uslugi" class="features">
+            <div class="container">
+                <h2>Czego możesz się spodziewać?</h2>
+                <div class="features-grid">
+                    <div class="feature-card"><i class="fa-solid fa-hat-wizard"></i><h3>Karty Tarota</h3><p>Wielkie i Małe Arkana odsłonią przed Tobą ścieżki przeznaczenia, ukryte motywacje i nadchodzące wyzwania.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-star-of-david"></i><h3>Astrologia</h3><p>Układ planet w momencie Twoich narodzin ma ogromny wpływ na Twój los. Odkryjmy razem jego sekrety.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-moon"></i><h3>Połączenie z Duchami</h3><p>Gdy zasłona między światami jest cienka, mogę nawiązać kontakt. Jestem dostępna, gdy gwiazdy sprzyjają.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-infinity"></i><h3>Numerologia</h3><p>Twoja data urodzenia i imię wibrują z potężną energią. Odkryjmy kod Twojego przeznaczenia zapisany w liczbach.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-eye"></i><h3>Interpretacja Snów</h3><p>Twoje sny to szepty duszy i wiadomości z astralnych wymiarów. Pomogę Ci zrozumieć ich symbolikę i ukryte prawdy.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-user-secret"></i><h3>Mistyczna Dyskrecja</h3><p>Twoje sekrety są bezpieczne w astralnej mgle. Wszystko, co powiesz, pozostaje między nami a kosmosem.</p></div>
+                </div>
+            </div>
+        </section>
         
+        <section id="opinie" class="testimonials">
+            <div class="container">
+                <h2>Szepty Zadowolonych Dusz</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card"><p>"Kasandra wskazała mi drogę, gdy błądziłam w mroku. Jej słowa były niczym latarnia w burzliwą noc."</p><cite>~ Elara, poszukiwaczka światła</cite></div>
+                    <div class="testimonial-card"><p>"Karty nie kłamią, a Kasandra odczytuje je z niesamowitą precyzją. Zrozumiałem, co muszę zmienić."</p><cite>~ Kael, wędrowiec przeznaczenia</cite></div>
+                    <div class="testimonial-card"><p>"Poczułam głęboki spokój i pewność po naszej sesji. Wiem, że wszechświat mi sprzyja."</p><cite>~ Lyra, tancerka z gwiazdami</cite></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" class="faq">
+            <div class="container">
+                <h2>Pradawne Pytania</h2>
+                <div class="faq-list">
+                    <div class="faq-item"><div class="faq-question">Czy moje sekrety są bezpieczne?<i class="fa-solid fa-chevron-down"></i></div><div class="faq-answer"><p>Twoje słowa są jak szepty rzucane w studnię echa – powracają tylko do Ciebie. Wszelkie tajemnice chroni mistyczna pieczęć dyskrecji.</p></div></div>
+                    <div class="faq-item"><div class="faq-question">Jakie pytania mogę zadać?<i class="fa-solid fa-chevron-down"></i></div><div class="faq-answer"><p>Wszechświat nie zna granic. Pytaj o miłość, karierę, ścieżkę duchową... Jednak pamiętaj, karty wskazują możliwości, ostateczny wybór zawsze należy do Ciebie.</p></div></div>
+                    <div class="faq-item"><div class="faq-question">Czy wróżba zawsze się sprawdza?<i class="fa-solid fa-chevron-down"></i></div><div class="faq-answer"><p>Przyszłość jest jak rzeka o wielu nurtach. Wskazuję Ci najbardziej prawdopodobną ścieżkę, ale Twoja wolna wola jest siłą, która może zmienić jej bieg.</p></div></div>
+                </div>
+            </div>
+        </section>
+
         <section id="pytanie" class="question-section">
             <div class="container">
                 <div class="question-form-container">
@@ -75,13 +135,13 @@
                     <form id="question-form">
                         <div class="form-group">
                             <label for="email-input">Twój Astralny Adres (E-mail)</label>
-                            <!-- Niestety nie da się pobrać name z IFRAME, ale możemy spróbować odgadnąć. To jest najbardziej prawdopodobna wartość. -->
-                            <input type="email" id="email-input" name="entry.1887375267" placeholder="Gdzie gwiazdy mają wysłać odpowiedź..." required>
+                            <!-- Niestety nie dało się pobrać name z IFRAME, więc musiałem zbadać kod strony podglądu formularza. -->
+                            <input type="email" id="email-input" name="entry.1042991380" placeholder="Gdzie gwiazdy mają wysłać odpowiedź..." required>
                         </div>
                         <div class="form-group">
                             <label for="question-input">Twoje Pytanie do Wszechświata</label>
-                            <!-- To jest najbardziej prawdopodobna wartość dla drugiego pola -->
-                            <textarea id="question-input" name="entry.1983533118" placeholder="Szepnij swoje pytanie do gwiazd..." required></textarea>
+                            <!-- To jest atrybut name dla drugiego pola z Twojego formularza. -->
+                            <textarea id="question-input" name="entry.1030048128" placeholder="Szepnij swoje pytanie do gwiazd..." required></textarea>
                         </div>
                         <button type="submit" class="cta-button"><i class="fa-solid fa-paper-plane"></i> Wyślij do Kosmosu</button>
                     </form>
@@ -89,9 +149,10 @@
                 </div>
             </div>
         </section>
-        
     </main>
-    <footer> <!-- ... treść stopki ... --> </footer>
+
+    <footer class="footer"><p>&copy; 2024 Wróżka Kasandra. Wszystkie przepowiednie mają charakter symboliczny i służą jako duchowe wskazówki.</p></footer>
+    <div id="cookie-banner"><p>Ten mistyczny portal używa kosmicznych energii (i ciasteczek), aby zapewnić Ci jak najlepsze wróżbiarskie doświadczenie.</p><button id="cookie-accept-btn">Rozumiem</button></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -124,6 +185,20 @@
                     formStatus.className = 'form-status-error';
                 });
             });
+
+            // Pozostałe skrypty (FAQ i Cookies)
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.querySelector('.faq-question').addEventListener('click', () => {
+                    const wasActive = item.classList.contains('active');
+                    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+                    if (!wasActive) item.classList.add('active');
+                });
+            });
+
+            const banner = document.getElementById('cookie-banner');
+            const acceptBtn = document.getElementById('cookie-accept-btn');
+            if (!localStorage.getItem('cookieConsent')) { setTimeout(() => banner.classList.add('show'), 2000); }
+            acceptBtn.addEventListener('click', () => { banner.classList.remove('show'); localStorage.setItem('cookieConsent', 'true'); });
         });
     </script>
 </body>
