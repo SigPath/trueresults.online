@@ -35,8 +35,7 @@
             --font-heading: 'Cinzel', serif;
             --font-body: 'Lato', sans-serif;
 
-            /* Other variables from the original CSS, adjusted as needed */
-            --border-radius-md: 0.75rem; --border-radius-lg: 1rem; --border-radius-2xl: 2rem;
+            --border-radius-lg: 1rem; --border-radius-2xl: 2rem;
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
             --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             --space-2: 0.5rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-16: 4rem; --space-24: 6rem; --space-32: 8rem;
@@ -45,7 +44,7 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; scroll-padding-top: 80px;}
         body {
             font-family: var(--font-body);
             background-color: var(--bg-primary);
@@ -79,14 +78,26 @@
         .cta-button:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 0 30px rgba(168, 85, 247, 0.8); }
 
         /* Generic Section Styling */
-        .features, .how-it-works, .testimonials, .faq { padding: var(--space-24) 0; }
-        .features-grid, .steps-grid, .testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-8); }
+        .features, .testimonials, .faq { padding: var(--space-24) 0; }
+        .features-grid, .testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-8); }
         
-        /* Feature Cards (Moje Usługi) */
-        .feature-card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); padding: var(--space-8); text-align: center; transition: all 0.3s; }
-        .feature-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-color: var(--primary-color); }
+        /* Feature Cards (Moje Usługi) & Testimonials */
+        .feature-card, .testimonial-card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); padding: var(--space-8); text-align: center; transition: all 0.3s; }
+        .feature-card:hover, .testimonial-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-color: var(--primary-color); }
         .feature-card i { font-size: var(--text-3xl); color: var(--primary-light); margin-bottom: var(--space-4); }
         .feature-card h3 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+        .testimonial-card p { font-style: italic; color: var(--text-primary); }
+        .testimonial-card cite { display: block; margin-top: var(--space-4); color: var(--accent-color); font-weight: 700; }
+        
+        /* FAQ Section */
+        .faq-list { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-4); }
+        .faq-item { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); overflow: hidden; }
+        .faq-question { padding: var(--space-4); cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+        .faq-question i { transition: transform 0.3s; }
+        .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+        .faq-answer p { padding: 0 var(--space-4) var(--space-4); }
+        .faq-item.active .faq-question i { transform: rotate(180deg); }
+        .faq-item.active .faq-answer { max-height: 200px; }
 
         /* Chat Section */
         .chat-section { padding-bottom: var(--space-24); }
@@ -105,6 +116,42 @@
         #user-input { flex-grow: 1; background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-primary); border-radius: 50px; padding: var(--space-2) var(--space-4); resize: none; font-family: var(--font-body); }
         #send-button { background: var(--primary-color); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; margin-left: var(--space-2); cursor: pointer; transition: background-color 0.2s; }
         #send-button:hover { background: var(--primary-dark); }
+        
+        /* Cookie Banner */
+        #cookie-banner {
+            position: fixed;
+            bottom: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 2rem);
+            max-width: 600px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: var(--space-4);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-2xl);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-4);
+            z-index: 2000;
+            transition: bottom 0.5s ease-in-out;
+            border: 1px solid var(--border-medium);
+        }
+        #cookie-banner.show {
+            bottom: 1rem;
+        }
+        #cookie-banner p { margin: 0; font-size: 0.9em; }
+        #cookie-accept-btn {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            border: none;
+            padding: var(--space-2) var(--space-4);
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        
         .footer { text-align: center; padding: var(--space-8); color: var(--text-tertiary); font-size: 0.9em; }
     </style>
 </head>
@@ -115,7 +162,7 @@
                 <a href="#" class="logo">Wróżka Kasandra</a>
                 <div class="nav-links">
                     <a href="#uslugi">Moje Usługi</a>
-                    <a href="#opinie">Szepty Zadowolonych Dusz</a>
+                    <a href="#opinie">Szepty Dusz</a>
                     <a href="#faq">Pradawne Pytania</a>
                 </div>
             </nav>
@@ -135,40 +182,45 @@
             <div class="container">
                 <h2>Czego możesz się spodziewać?</h2>
                 <div class="features-grid">
-                    <div class="feature-card">
-                        <i class="fa-solid fa-hat-wizard"></i>
-                        <h3>Karty Tarota</h3>
-                        <p>Wielkie i Małe Arkana odsłonią przed Tobą ścieżki przeznaczenia, ukryte motywacje i nadchodzące wyzwania.</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fa-solid fa-star-of-david"></i>
-                        <h3>Astrologia</h3>
-                        <p>Układ planet w momencie Twoich narodzin ma ogromny wpływ na Twój los. Odkryjmy razem jego sekrety.</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fa-solid fa-moon"></i>
-                        <h3>Połączenie ze Światem Duchów</h3>
-                        <p>Gdy zasłona między światami jest cienka, mogę nawiązać kontakt. Jestem dostępna, gdy gwiazdy sprzyjają.</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fa-solid fa-user-secret"></i>
-                        <h3>Mistyczna Dyskrecja</h3>
-                        <p>Twoje sekrety są bezpieczne w astralnej mgle. Wszystko, co powiesz, pozostaje między nami a kosmosem.</p>
-                    </div>
+                    <div class="feature-card"><i class="fa-solid fa-hat-wizard"></i><h3>Karty Tarota</h3><p>Wielkie i Małe Arkana odsłonią przed Tobą ścieżki przeznaczenia, ukryte motywacje i nadchodzące wyzwania.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-star-of-david"></i><h3>Astrologia</h3><p>Układ planet w momencie Twoich narodzin ma ogromny wpływ na Twój los. Odkryjmy razem jego sekrety.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-moon"></i><h3>Połączenie z Duchami</h3><p>Gdy zasłona między światami jest cienka, mogę nawiązać kontakt. Jestem dostępna, gdy gwiazdy sprzyjają.</p></div>
+                    <div class="feature-card"><i class="fa-solid fa-user-secret"></i><h3>Mistyczna Dyskrecja</h3><p>Twoje sekrety są bezpieczne w astralnej mgle. Wszystko, co powiesz, pozostaje między nami a kosmosem.</p></div>
                 </div>
             </div>
         </section>
         
+        <!-- Szepty Dusz (Opinie) -->
+        <section id="opinie" class="testimonials">
+            <div class="container">
+                <h2>Szepty Zadowolonych Dusz</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card"><p>"Kasandra wskazała mi drogę, gdy błądziłam w mroku. Jej słowa były niczym latarnia w burzliwą noc."</p><cite>~ Elara, poszukiwaczka światła</cite></div>
+                    <div class="testimonial-card"><p>"Karty nie kłamią, a Kasandra odczytuje je z niesamowitą precyzją. Zrozumiałem, co muszę zmienić."</p><cite>~ Kael, wędrowiec przeznaczenia</cite></div>
+                    <div class="testimonial-card"><p>"Poczułam głęboki spokój i pewność po naszej sesji. Wiem, że wszechświat mi sprzyja."</p><cite>~ Lyra, tancerka z gwiazdami</cite></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pradawne Pytania (FAQ) -->
+        <section id="faq" class="faq">
+            <div class="container">
+                <h2>Pradawne Pytania</h2>
+                <div class="faq-list">
+                    <div class="faq-item"><div class="faq-question">Czy moje sekrety są bezpieczne?<i class="fa-solid fa-chevron-down"></i></div><div class="faq-answer"><p>Twoje słowa są jak szepty rzucane w studnię echa – powracają tylko do Ciebie. Wszelkie tajemnice chroni mistyczna pieczęć dyskrecji.</p></div></div>
+                    <div class="faq-item"><div class="faq-question">Jakie pytania mogę zadać?<i class="fa-solid fa-chevron-down"></i></div><div class="faq-answer"><p>Wszechświat nie zna granic. Pytaj o miłość, karierę, ścieżkę duchową... Jednak pamiętaj, karty wskazują możliwości, ostateczny wybór zawsze należy do Ciebie.</p></div></div>
+                    <div class="faq-item"><div class="faq-question">Czy wróżba zawsze się sprawdza?<i class="fa-solid fa-chevron-down"></i></div><div class="faq-answer"><p>Przyszłość jest jak rzeka o wielu nurtach. Wskazuję Ci najbardziej prawdopodobną ścieżkę, ale Twoja wolna wola jest siłą, która może zmienić jej bieg.</p></div></div>
+                </div>
+            </div>
+        </section>
+
         <section id="chat" class="chat-section">
             <div class="container">
                 <h2>Twoja Sesja z Kasandrą</h2>
                 <div class="chat-container">
                     <div class="chat-header">
                         <div class="bot-avatar"><img id="bot-image" src="" alt="Wróżka Kasandra"></div>
-                        <div class="therapist-text">
-                            <h2 id="bot-name">Wróżka Kasandra</h2>
-                            <p>Czeka na Twoje pytanie...</p>
-                        </div>
+                        <div class="therapist-text"><h2 id="bot-name">Wróżka Kasandra</h2><p>Czeka na Twoje pytanie...</p></div>
                     </div>
                     <div id="chat-messages" class="chat-messages"></div>
                     <div class="chat-input-container">
@@ -181,8 +233,14 @@
     </main>
 
     <footer class="footer">
-        <p>&copy; 2024 Wróżka Kasandra. Wszystkie przepowiednie mają charakter symboliczny.</p>
+        <p>&copy; 2024 Wróżka Kasandra. Wszystkie przepowiednie mają charakter symboliczny i służą jako duchowe wskazówki.</p>
     </footer>
+
+    <!-- Banner Cookies -->
+    <div id="cookie-banner">
+        <p>Ten mistyczny portal używa kosmicznych energii (i ciasteczek), aby zapewnić Ci jak najlepsze wróżbiarskie doświadczenie.</p>
+        <button id="cookie-accept-btn">Rozumiem</button>
+    </div>
 
     <script>
         // ================== ZMIANA 1: Konfiguracja API i Osobowości ==================
@@ -192,7 +250,6 @@
 
         const fortuneTeller = {
             name: 'Wróżka Kasandra',
-            // Znalazłem odpowiednie zdjęcie na Unsplash
             image: 'https://images.unsplash.com/photo-1596726137688-38482a0b3633?w=150&h=150&fit=crop&crop=face'
         };
 
@@ -294,12 +351,47 @@
         sendButton.addEventListener('click', handleSendMessage);
         userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
         
+        // Funkcjonalność FAQ
+        function initializeFAQ() {
+            const faqItems = document.querySelectorAll('.faq-item');
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                question.addEventListener('click', () => {
+                    const wasActive = item.classList.contains('active');
+                    faqItems.forEach(i => i.classList.remove('active'));
+                    if (!wasActive) {
+                        item.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // Funkcjonalność Bannera Cookies
+        function initializeCookieBanner() {
+            const banner = document.getElementById('cookie-banner');
+            const acceptBtn = document.getElementById('cookie-accept-btn');
+
+            if (!localStorage.getItem('cookieConsent')) {
+                setTimeout(() => {
+                    banner.classList.add('show');
+                }, 2000);
+            }
+
+            acceptBtn.addEventListener('click', () => {
+                banner.classList.remove('show');
+                localStorage.setItem('cookieConsent', 'true');
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('bot-name').textContent = fortuneTeller.name;
             document.getElementById('bot-image').src = fortuneTeller.image;
             const welcomeMessage = "Witaj, wędrowcze. Widzę, że przybywasz z pytaniem. Gwiazdy szepczą mi Twoje imię... Przedstaw się, abym mogła odczytać Twój los.";
             addMessage(welcomeMessage);
             conversationHistory.push({ role: 'assistant', content: welcomeMessage });
+
+            initializeFAQ();
+            initializeCookieBanner();
         });
     </script>
 </body>
