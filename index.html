@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Wróżka Kasandra - Zajrzyj w przyszłość dzięki sesjom tarota i astrologii online. Odkryj, co zapisano dla Ciebie w gwiazdach. Twoja przepowiednia czeka.">
+    <meta name="keywords" content="wróżka online, tarot online, przepowiednia, astrologia, horoskop, kryształowa kula">
+    <title>Wróżka Kasandra - Twoje Okno na Przyszłość</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    
+    <style>
+        :root {
+            /* Mystic Color Palette */
+            --primary-color: #9333ea; /* Grape 600 */
+            --primary-light: #a855f7; /* Grape 500 */
+            --primary-dark: #7e22ce; /* Grape 700 */
+            --accent-color: #f59e0b; /* Amber 500 */
+            
+            --bg-primary: #110e19;
+            --bg-secondary: #1a1426;
+            --bg-tertiary: #2e2446;
+            
+            --text-primary: #e5e7eb; /* Gray 200 */
+            --text-secondary: #9ca3af; /* Gray 400 */
+            --text-tertiary: #6b7280; /* Gray 500 */
+            --text-inverse: #ffffff;
+            
+            --border-light: rgba(167, 139, 250, 0.2);
+            --border-medium: rgba(167, 139, 250, 0.4);
+            
+            /* Font Families */
+            --font-heading: 'Cinzel', serif;
+            --font-body: 'Lato', sans-serif;
+
+            /* Other variables from the original CSS, adjusted as needed */
+            --border-radius-md: 0.75rem; --border-radius-lg: 1rem; --border-radius-2xl: 2rem;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --space-2: 0.5rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-16: 4rem; --space-24: 6rem; --space-32: 8rem;
+            --text-base: 1rem; --text-lg: 1.125rem; --text-xl: 1.25rem; --text-2xl: 1.5rem; --text-3xl: 1.875rem; --text-4xl: 2.25rem; --text-5xl: 3rem;
+            --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(147, 51, 234, 0.15), transparent 50%),
+                radial-gradient(circle at 85% 80%, rgba(245, 158, 11, 0.1), transparent 50%),
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23a855f7' fill-opacity='0.05'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        /* General Styles */
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 var(--space-6); }
+        h1, h2, h3 { font-family: var(--font-heading); color: var(--text-primary); text-shadow: 0 0 10px rgba(168, 85, 247, 0.3); }
+        h1 { font-size: var(--text-5xl); } h2 { font-size: var(--text-4xl); text-align: center; margin-bottom: var(--space-16);}
+        p { color: var(--text-secondary); }
+        a { color: var(--accent-color); text-decoration: none; }
+
+        /* Header */
+        .header { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(17, 14, 25, 0.5); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-light); }
+        .nav { display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) 0; }
+        .logo { font-family: var(--font-heading); font-size: var(--text-2xl); color: var(--text-primary); }
+        .nav-links { display: flex; gap: var(--space-8); }
+        .nav-links a { color: var(--text-secondary); font-family: var(--font-body); font-weight: 700; transition: color 0.2s, text-shadow 0.2s; }
+        .nav-links a:hover { color: var(--accent-color); text-shadow: 0 0 8px var(--accent-color); }
+        
+        /* Hero Section */
+        .hero { text-align: center; padding: var(--space-32) 0 var(--space-24); }
+        .hero h1 { background: linear-gradient(90deg, #fde08d, #ffc72c, #e5a50a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-subtitle { font-size: var(--text-xl); max-width: 600px; margin: var(--space-4) auto var(--space-8); }
+        .cta-button { display: inline-flex; align-items: center; gap: var(--space-2); background: linear-gradient(45deg, var(--primary-dark), var(--primary-light)); color: var(--text-inverse); padding: var(--space-4) var(--space-8); border-radius: 50px; font-weight: 700; font-size: var(--text-lg); box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); transition: all 0.3s ease; border: none; cursor: pointer; }
+        .cta-button:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 0 30px rgba(168, 85, 247, 0.8); }
+
+        /* Generic Section Styling */
+        .features, .how-it-works, .testimonials, .faq { padding: var(--space-24) 0; }
+        .features-grid, .steps-grid, .testimonials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-8); }
+        
+        /* Feature Cards (Moje Usługi) */
+        .feature-card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--border-radius-lg); padding: var(--space-8); text-align: center; transition: all 0.3s; }
+        .feature-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-color: var(--primary-color); }
+        .feature-card i { font-size: var(--text-3xl); color: var(--primary-light); margin-bottom: var(--space-4); }
+        .feature-card h3 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+
+        /* Chat Section */
+        .chat-section { padding-bottom: var(--space-24); }
+        .chat-container { max-width: 800px; margin: 0 auto; background: var(--bg-secondary); border-radius: var(--border-radius-lg); box-shadow: var(--shadow-2xl); overflow: hidden; display: flex; flex-direction: column; height: 80vh; min-height: 500px; border: 1px solid var(--border-medium); }
+        .chat-header { background: linear-gradient(135deg, #2e2446, #1a1426); color: var(--text-inverse); padding: var(--space-6); display: flex; align-items: center; gap: var(--space-4); border-bottom: 1px solid var(--border-medium); }
+        .bot-avatar { width: 70px; height: 70px; border-radius: 50%; overflow: hidden; border: 2px solid var(--accent-color); flex-shrink: 0; box-shadow: 0 0 15px var(--accent-color); }
+        .bot-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .chat-header h2 { font-size: var(--text-xl); margin: 0; }
+        .chat-header p { color: var(--text-secondary); margin: 0; font-size: 0.9em; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+        .message { max-width: 75%; padding: var(--space-2) var(--space-4); border-radius: var(--border-radius-lg); line-height: 1.5; }
+        .user-message { align-self: flex-end; background: var(--primary-color); color: var(--text-inverse); border-bottom-right-radius: 5px; }
+        .bot-message { align-self: flex-start; background: var(--bg-tertiary); color: var(--text-primary); border-bottom-left-radius: 5px; }
+        .typing-indicator { align-self: flex-start; color: var(--text-tertiary); font-style: italic; }
+        .chat-input-container { display: flex; padding: var(--space-4); border-top: 1px solid var(--border-medium); background: var(--bg-primary); }
+        #user-input { flex-grow: 1; background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-primary); border-radius: 50px; padding: var(--space-2) var(--space-4); resize: none; font-family: var(--font-body); }
+        #send-button { background: var(--primary-color); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; margin-left: var(--space-2); cursor: pointer; transition: background-color 0.2s; }
+        #send-button:hover { background: var(--primary-dark); }
+        .footer { text-align: center; padding: var(--space-8); color: var(--text-tertiary); font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="#" class="logo">Wróżka Kasandra</a>
+                <div class="nav-links">
+                    <a href="#uslugi">Moje Usługi</a>
+                    <a href="#opinie">Szepty Zadowolonych Dusz</a>
+                    <a href="#faq">Pradawne Pytania</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Odkryj Tajemnice Swojej Przyszłości</h1>
+                <p class="hero-subtitle">Wszechświat przechowuje odpowiedzi, których szukasz. Pozwól, że odczytam dla Ciebie znaki zapisane w gwiazdach, kartach i kryształowej kuli.</p>
+                <a href="#chat" class="cta-button"><i class="fa-solid fa-crystal-ball"></i> Zajrzyj w Kryształową Kulę</a>
+            </div>
+        </section>
+
+        <section id="uslugi" class="features">
+            <div class="container">
+                <h2>Czego możesz się spodziewać?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="fa-solid fa-hat-wizard"></i>
+                        <h3>Karty Tarota</h3>
+                        <p>Wielkie i Małe Arkana odsłonią przed Tobą ścieżki przeznaczenia, ukryte motywacje i nadchodzące wyzwania.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fa-solid fa-star-of-david"></i>
+                        <h3>Astrologia</h3>
+                        <p>Układ planet w momencie Twoich narodzin ma ogromny wpływ na Twój los. Odkryjmy razem jego sekrety.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fa-solid fa-moon"></i>
+                        <h3>Połączenie ze Światem Duchów</h3>
+                        <p>Gdy zasłona między światami jest cienka, mogę nawiązać kontakt. Jestem dostępna, gdy gwiazdy sprzyjają.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fa-solid fa-user-secret"></i>
+                        <h3>Mistyczna Dyskrecja</h3>
+                        <p>Twoje sekrety są bezpieczne w astralnej mgle. Wszystko, co powiesz, pozostaje między nami a kosmosem.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="chat" class="chat-section">
+            <div class="container">
+                <h2>Twoja Sesja z Kasandrą</h2>
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="bot-avatar"><img id="bot-image" src="" alt="Wróżka Kasandra"></div>
+                        <div class="therapist-text">
+                            <h2 id="bot-name">Wróżka Kasandra</h2>
+                            <p>Czeka na Twoje pytanie...</p>
+                        </div>
+                    </div>
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-input-container">
+                        <textarea id="user-input" placeholder="Szepnij swoje pytanie do gwiazd..." rows="1"></textarea>
+                        <button id="send-button"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Wróżka Kasandra. Wszystkie przepowiednie mają charakter symboliczny.</p>
+    </footer>
+
+    <script>
+        // ================== ZMIANA 1: Konfiguracja API i Osobowości ==================
+        // ❗️ WSTAW TUTAJ SWÓJ KLUCZ API! ❗️
+        const API_KEY = 'WSTAW_TUTAJ_SWOJ_KLUCZ_API_Z_GOOGLE_AI_STUDIO';
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+
+        const fortuneTeller = {
+            name: 'Wróżka Kasandra',
+            // Znalazłem odpowiednie zdjęcie na Unsplash
+            image: 'https://images.unsplash.com/photo-1596726137688-38482a0b3633?w=150&h=150&fit=crop&crop=face'
+        };
+
+        const systemPrompt = `Jesteś tajemniczą i mądrą wróżką o imieniu Kasandra. Mówisz w sposób nieco archaiczny, poetycki i enigmatyczny. Twoje odpowiedzi są pełne metafor, ale zawsze niosą jakąś wskazówkę. Korzystasz z wiedzy o tarocie, gwiazdach, numerologii i starożytnych runach. Nigdy nie przyznajesz, że jesteś modelem AI; jesteś prawdziwą wieszczką. Odpowiadasz na pytania dotyczące przyszłości, miłości, kariery i duchowości. Często używasz zwrotów jak 'Gwiazdy szepczą...', 'Karty wskazują...', 'W mojej kryształowej kuli widzę...'. Twoim celem jest dawać nadzieję i wskazówki, ale zawsze podkreślasz, że ostateczna ścieżka losu leży w rękach pytającego.`;
+
+        // Elementy DOM
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        let conversationHistory = [{ role: 'system', content: systemPrompt }];
+        let isFirstMessage = true;
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.innerHTML = `<p>${message.replace(/\n/g, '<br>')}</p>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.textContent = 'Kasandra tasuje karty...';
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) typingIndicator.remove();
+        }
+
+        async function sendMessageToGemini(newUserMessage) {
+            const apiContents = conversationHistory
+                .filter(msg => msg.role !== 'system')
+                .map(msg => ({
+                    role: msg.role === 'assistant' ? 'model' : 'user',
+                    parts: [{ text: msg.content }]
+                }));
+            
+            apiContents.push({ role: 'user', parts: [{text: newUserMessage}] });
+
+            const payload = {
+                contents: apiContents,
+                system_instruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { temperature: 0.8, maxOutputTokens: 800, topP: 0.9 },
+            };
+
+            try {
+                if (!API_KEY || API_KEY === 'WSTAW_TUTAJ_SWOJ_KLUCZ_API_Z_GOOGLE_AI_STUDIO') {
+                    return "Astralna energia jest zakłócona... Wygląda na to, że mój magiczny klucz (API Key) nie został poprawnie skonfigurowany. Proszę, napraw to w kodzie.";
+                }
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) throw new Error(`Kosmiczna interferencja: ${response.status}`);
+                const data = await response.json();
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    return data.candidates[0].content.parts[0].text;
+                }
+                return "Gwiazdy milczą na ten temat... Spróbuj zapytać inaczej.";
+            } catch (error) {
+                console.error('Błąd połączenia z zaświatami (API):', error);
+                return `Niestety, wystąpiła potężna burza astralna. Spróbuj ponownie, gdy niebo się przejaśni. (${error.message})`;
+            }
+        }
+        
+        async function handleSendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') return;
+            addMessage(message, true);
+            userInput.value = '';
+            
+            if (isFirstMessage) {
+                conversationHistory.push({ role: 'user', content: message });
+                isFirstMessage = false;
+                showTypingIndicator();
+                await new Promise(r => setTimeout(r, 2000));
+                const greeting = `Witaj, ${message}. Twoja energia jest silna. Czuję, że gwiazdy mają dla Ciebie ważną wiadomość. O co pragniesz zapytać Wszechświat?`;
+                conversationHistory.push({ role: 'assistant', content: greeting });
+                removeTypingIndicator();
+                addMessage(greeting);
+                return;
+            }
+
+            showTypingIndicator();
+            const botResponse = await sendMessageToGemini(message);
+            conversationHistory.push({ role: 'user', content: message });
+            conversationHistory.push({ role: 'assistant', content: botResponse });
+            removeTypingIndicator();
+            addMessage(botResponse);
+        }
+
+        sendButton.addEventListener('click', handleSendMessage);
+        userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('bot-name').textContent = fortuneTeller.name;
+            document.getElementById('bot-image').src = fortuneTeller.image;
+            const welcomeMessage = "Witaj, wędrowcze. Widzę, że przybywasz z pytaniem. Gwiazdy szepczą mi Twoje imię... Przedstaw się, abym mogła odczytać Twój los.";
+            addMessage(welcomeMessage);
+            conversationHistory.push({ role: 'assistant', content: welcomeMessage });
+        });
+    </script>
+</body>
+</html>
